@@ -4,7 +4,10 @@ from nextcord import Interaction
 import json
 import os
 
-ROLE_FILE = "role.json"
+# Using a JSON file to store role IDs.
+# Only for demonstration & development purposes, not for production use.
+# The production version will use MongoDB for persistent storage. 
+ROLE_FILE = os.path.join("data", "roles.json")
 
 def load_roles():
     if os.path.exists(ROLE_FILE):
