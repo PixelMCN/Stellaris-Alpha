@@ -5,7 +5,7 @@ from nextcord.ext import commands
 class Mute(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    #=============================================================================================================================================================
     # Slash command implementation
     @nextcord.slash_command(name="mute", description="Mute one or all members in a voice channel")
     async def mute(self, interaction: nextcord.Interaction, member: nextcord.Member = nextcord.SlashOption(required=False)):
@@ -33,5 +33,5 @@ class Mute(commands.Cog):
                 await ctx.send("All members in the voice channel have been muted.")
         else:
             await ctx.send("You do not have permission to use this command.")
-    #+
+    #=============================================================================================================================================================
             

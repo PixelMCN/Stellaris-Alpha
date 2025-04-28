@@ -6,6 +6,7 @@ class Deafen(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    #=============================================================================================================================================================
     @nextcord.slash_command(name="deafened", description="Deafen one or all members in a voice channel")
     async def deafened(self, interaction: nextcord.Interaction, member: nextcord.Member = nextcord.SlashOption(required=False)):
         if interaction.user.guild_permissions.deafen_members:
@@ -18,4 +19,5 @@ class Deafen(commands.Cog):
                 await interaction.response.send_message("All members in the voice channel have been deafened.")
         else:
             await interaction.response.send_message("You do not have permission to use this command.") 
+    #=============================================================================================================================================================
 

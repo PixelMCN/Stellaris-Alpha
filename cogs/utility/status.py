@@ -11,7 +11,7 @@ BOT_VERSION = 'v1.0.0'  # Update this when you update your bot
 class Status(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    #=============================================================================================================================================================
     @nextcord.slash_command(name="status", description="Shows the system resources used by bot")
     async def status(self, interaction: nextcord.Interaction):
         # System resources calculation
@@ -87,4 +87,4 @@ class Status(commands.Cog):
         embed.timestamp = nextcord.utils.utcnow()
 
         await interaction.response.send_message(embed=embed)
-
+    #=============================================================================================================================================================

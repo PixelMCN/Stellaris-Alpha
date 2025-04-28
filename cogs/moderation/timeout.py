@@ -95,7 +95,9 @@ class Timeout(commands.Cog):
             await interaction.followup.send("I don't have permission to timeout this member.", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}", ephemeral=True)
+    #=============================================================================================================================================================
 
+    
     # TIMEOUT REMOVE COMMAND
     #=============================================================================================================================================================
     @timeout.subcommand(name="remove", description="Remove timeout from a member")

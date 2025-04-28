@@ -11,6 +11,7 @@ class Logs(commands.Cog):
 
     # LOGS SETUP COMMAND - FIXED VERSION
     #=============================================================================================================================================================
+    # Slash command implementation
     @nextcord.slash_command(name="logs", description="Creates logging channels in a Logs category for messages & server events")
     async def logs(self, ctx: nextcord.Interaction):
         if not ctx.user.guild_permissions.manage_channels:
@@ -57,6 +58,60 @@ class Logs(commands.Cog):
                 created_channels.append(existing_channel.mention)
 
         await ctx.followup.send(
+            f"Logging channels created or already exist:\n"
+            f"Message Logs: {created_channels[0]}\n"
+            f"Server Logs: {created_channels[1]}\n"
+            f"Voice Logs: {created_channels[2]}\n"
+            f"Mod Logs: {created_channels[3]}",
+            ephemeral=True
+        )
+    #------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # Prefix command implementation
+    @commands.command(name="logs", aliases=["logsetup"])
+    async def logs_prefix(self, ctx):
+        if not ctx.author.guild_permissions.manage_channels:
+            await ctx.send("This command requires `manage channels` permission")
+            return
+
+        # Acknowledge the command immediately to prevent timeout
+        await ctx.send("Creating logging channels...")
+
+        guild = ctx.guild
+
+        # Create a category for logs if it doesn't exist
+        admin_role = nextcord.utils.get(guild.roles, permissions=nextcord.Permissions(administrator=True))
+        overwrites = {
+            guild.default_role: nextcord.PermissionOverwrite(view_channel=False),
+        }
+        if admin_role:
+            overwrites[admin_role] = nextcord.PermissionOverwrite(view_channel=True)
+        else:
+            # If no role with admin permission is found, allow only users with admin permission
+            for role in guild.roles:
+                if role.permissions.administrator:
+                    overwrites[role] = nextcord.PermissionOverwrite(view_channel=True)
+
+        log_category = nextcord.utils.get(guild.categories, name="Logs")
+        if not log_category:
+            log_category = await guild.create_category("Logs", overwrites=overwrites)
+
+        # Define channel names
+        channel_names = {
+            "message-logs": "Channel for message logging",
+            "server-logs": "Channel for server updates logging",
+            "voice-logs": "Channel for voice logging",
+            "mod-logs": "Channel for moderation action logging"
+        }
+        created_channels = []
+        for name, purpose in channel_names.items():
+            existing_channel = nextcord.utils.get(guild.text_channels, name=name)
+            if not existing_channel:
+                channel = await guild.create_text_channel(name, category=log_category, topic=purpose)
+                created_channels.append(channel.mention)
+            else:
+                created_channels.append(existing_channel.mention)
+
+        await ctx.send(
             f"Logging channels created or already exist:\n"
             f"Message Logs: {created_channels[0]}\n"
             f"Server Logs: {created_channels[1]}\n"

@@ -5,11 +5,11 @@ from nextcord.ext import commands
 class Role(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    #=============================================================================================================================================================
     @nextcord.slash_command(name="role", description="Manage roles")
     async def role(self, interaction: Interaction):
         pass
-
+    #------------------------------------------------------------------------------------------------------------------------------------------------------------
     @role.subcommand(name="add", description="Add a role to a user or all users")
     async def add_role(self, interaction: Interaction, role: nextcord.Role, user: nextcord.Member = nextcord.SlashOption(required=False)):
         if user:
@@ -24,7 +24,7 @@ class Role(commands.Cog):
             embed = nextcord.Embed(title="Role Added to All Users", color=nextcord.Color.green())
             embed.add_field(name="Role", value=role.mention, inline=True)
             await interaction.response.send_message(embed=embed)
-
+    #------------------------------------------------------------------------------------------------------------------------------------------------------------
     @role.subcommand(name="remove", description="Remove a role from a user or all users")
     async def remove_role(self, interaction: Interaction, role: nextcord.Role, user: nextcord.Member = nextcord.SlashOption(required=False)):
         if user:
@@ -40,7 +40,7 @@ class Role(commands.Cog):
             embed.add_field(name="Role", value=role.mention, inline=True)
             await interaction.response.send_message(embed=embed)
         
-
+    #------------------------------------------------------------------------------------------------------------------------------------------------------------
     @role.subcommand(name="list", description="List all roles in the server")
     async def list_roles(self, interaction: Interaction):
         roles = interaction.guild.roles
@@ -48,3 +48,4 @@ class Role(commands.Cog):
         for role in roles:
             embed.add_field(name=role.name, value=role.id, inline=False)
         await interaction.response.send_message(embed=embed)
+    #=============================================================================================================================================================
