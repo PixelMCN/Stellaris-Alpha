@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import error handler
+# Import the error handler
 from utils.error_handler import ErrorHandler
 
 #importing moderation cogs
@@ -20,6 +20,7 @@ from cogs.moderation.lock import LockUnlock
 from cogs.moderation.slowmode import Slowmode
 from cogs.moderation.mute import Mute
 from cogs.moderation.deafen import Deafen
+# from cogs.moderation.automod import AutoMod  # Import the new AutoMod cog
 #=============================================================================================================================================================
 
 
@@ -42,18 +43,18 @@ from cogs.utility.roleinfo import RoleInfo
 
 BOT_TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Define your intents
+# INTENTS
 intents = nextcord.Intents.default()
 intents.message_content = True  
 intents.guilds = True
 intents.members = True
 
-# Create the bot instance
+# BOT INSTANCE
 bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 
-# Initialize error handler
-error_handler = ErrorHandler(bot)
-error_handler.register_error_handlers()
+# ERROR HANDLER
+bot.error_handler = ErrorHandler(bot)
+bot.error_handler.register_error_handlers()
 
 # Load Moderation cogs
 #=============================================================================================================================================================
@@ -66,6 +67,7 @@ bot.add_cog(LockUnlock(bot))
 bot.add_cog(Slowmode(bot))
 bot.add_cog(Mute(bot))
 bot.add_cog(Deafen(bot))
+# bot.add_cog(AutoMod(bot))  # Add the AutoMod cog
 #=============================================================================================================================================================
 # Load Admin cogs
 #=============================================================================================================================================================

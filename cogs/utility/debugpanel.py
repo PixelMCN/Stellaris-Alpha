@@ -16,7 +16,7 @@ class DebugPanelView(nextcord.ui.View):
         self.add_item(nextcord.ui.Button(
             label="Support Server",
             url="https://discord.gg/wqgvsuw7r8",
-            emoji="💬"
+            emoji="<:discord:1366816402371248268>"
         ))
         self.add_item(nextcord.ui.Button(
             label="Docs",
@@ -26,7 +26,7 @@ class DebugPanelView(nextcord.ui.View):
         self.add_item(nextcord.ui.Button(
             label="GitHub",
             url="https://github.com/PixelMCN/Stellaris-Alpha",
-            emoji="🔗"
+            emoji="<:github:1366816433161371698>"
         ))
 
 class Debug(commands.Cog):

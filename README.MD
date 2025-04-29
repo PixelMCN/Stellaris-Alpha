@@ -9,9 +9,17 @@
 </div>
 
 # Features
+## Admin
+| Command | Description |
+|---------|-------------|
+| **Autorole** | Automatically assign roles to new members |
+| **Logs** | Configure and manage server logs |
+| **Role** | Manage server roles and permissions |
+
 ## Moderation
 | Command | Description |
 |---------|-------------|
+| **AutoMod** | Automated message moderation with toggleable features |
 | **Kick** | Remove users from your server |
 | **Ban** | Permanently ban users from your server |
 | **Unban** | Remove bans from previously banned users |
@@ -29,13 +37,6 @@
 | **Avatar** | Display or save user avatars |
 | **Server Info** | View detailed information about the server |
 | **User Info** | View detailed information about users |
-
-## Admin
-| Command | Description |
-|---------|-------------|
-| **Autorole** | Automatically assign roles to new members |
-| **Logs** | Configure and manage server logs |
-| **Role** | Manage server roles and permissions |
 
 ## Installation
 1. Clone the repository

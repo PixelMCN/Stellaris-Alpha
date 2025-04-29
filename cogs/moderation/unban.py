@@ -5,7 +5,11 @@ from nextcord import Interaction, SlashOption
 class Unban(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        # Initialize error handler reference
+        self.error_handler = bot.error_handler
 
+    # UNBAN COMMAND
+    #=============================================================================================================================================================
     @nextcord.slash_command(name="unban", description="Unban a user from the server")
     async def unban(
         self, 
@@ -19,21 +23,21 @@ class Unban(commands.Cog):
             required=False
         )
     ):
-        # Check if the user has ban permissions
-        if not interaction.user.guild_permissions.ban_members:
-            await interaction.response.send_message("You don't have permission to unban members.", ephemeral=True)
-            return
-            
-        # Check if the bot has ban permissions
-        if not interaction.guild.me.guild_permissions.ban_members:
-            await interaction.response.send_message("I don't have permission to unban members.", ephemeral=True)
-            return
-
-        # Default reason if none provided
-        if reason is None:
-            reason = f"Unbanned by {interaction.user}"
-
         try:
+            # Check if the user has ban permissions
+            if not interaction.user.guild_permissions.ban_members:
+                await interaction.response.send_message("You don't have permission to unban members.", ephemeral=True)
+                return
+                
+            # Check if the bot has ban permissions
+            if not interaction.guild.me.guild_permissions.ban_members:
+                await interaction.response.send_message("I don't have permission to unban members.", ephemeral=True)
+                return
+
+            # Default reason if none provided
+            if reason is None:
+                reason = f"Unbanned by {interaction.user}"
+
             # Try to convert the user_id to an integer
             try:
                 user_id = int(user_id)
@@ -67,6 +71,11 @@ class Unban(commands.Cog):
             
         except nextcord.Forbidden:
             await interaction.response.send_message("I don't have permission to unban that user.", ephemeral=True)
+        except nextcord.NotFound:
+            await interaction.response.send_message("User not found. Please check the ID and try again.", ephemeral=True)
+        except nextcord.HTTPException as e:
+            await interaction.response.send_message(f"An HTTP error occurred: {str(e)}", ephemeral=True)
         except Exception as e:
             # Let the global error handler handle other exceptions
-            raise e
+            await self.error_handler.handle_command_error(interaction, e, "unban")
+    #=============================================================================================================================================================

@@ -31,28 +31,31 @@ class ErrorHandler:
         
         # Create user-friendly error message
         embed = nextcord.Embed(
-            title=f"Error in /{command_name}",
+            title="Command Error",  # Simplified title
             color=0xFF0000,
             timestamp=datetime.datetime.now()
         )
         
         # Add user-friendly error message based on error type
         if isinstance(error, nextcord.errors.Forbidden):
-            if "50013" in str(error):  # Missing Permissions error code
-                embed.description = "I don't have the required permissions to perform this action."
-                embed.add_field(name="Required Permission", value="Make sure I have the appropriate role and permissions.")
-            else:
-                embed.description = "I don't have permission to do that."
+            embed.description = "I don't have permission to do that."
         elif isinstance(error, nextcord.errors.NotFound):
-            embed.description = "The requested resource was not found."
+            embed.description = "I couldn't find what you're looking for."
         elif isinstance(error, nextcord.errors.HTTPException):
-            embed.description = "There was an error communicating with Discord."
+            if "40032" in str(error):  # User not in voice channel
+                embed.description = "The user needs to be in a voice channel for this command."
+            else:
+                embed.description = "There was a problem with Discord. Please try again later."
+        elif "is not connected to voice" in str(error):
+            embed.description = "The user needs to be in a voice channel for this command."
         else:
-            embed.description = f"An unexpected error occurred: `{str(error)}`"
+            # Simplify the error message
+            simple_error = str(error).split(":")[-1].strip() if ":" in str(error) else str(error)
+            embed.description = f"Something went wrong. Please try again later."
         
-        # Add error details
-        embed.add_field(name="Error Type", value=f"`{error_type}`", inline=True)
-        embed.add_field(name="Command", value=f"`/{command_name}`", inline=True)
+        # Remove technical error details for user-facing messages
+        # embed.add_field(name="Error Type", value=f"`{error_type}`", inline=True)
+        # embed.add_field(name="Command", value=f"`/{command_name}`", inline=True)
         
         # Add footer with error ID
         embed.set_footer(text=f"Error ID: {interaction.id}")

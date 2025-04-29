@@ -8,6 +8,8 @@ class Purge(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
+        # Initialize error handler reference
+        self.error_handler = bot.error_handler
 
     async def check_permissions(self, interaction: nextcord.Interaction) -> tuple[bool, Optional[str]]:
         """Check both bot and user permissions"""
@@ -109,8 +111,6 @@ class Purge(commands.Cog):
                 ephemeral=True
             )
         except Exception as e:
-            await interaction.followup.send(
-                f"❌ An unexpected error occurred: {str(e)}",
-                ephemeral=True
-            )
+            # Let the global error handler handle other exceptions
+            await self.error_handler.handle_command_error(interaction, e, "purge")
     #============================================================================================================================================================="

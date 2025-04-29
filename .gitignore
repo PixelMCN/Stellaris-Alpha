@@ -177,3 +177,5 @@ cython_debug/
 /.venv
 
 /structure.md
+cogs/moderation/automod.py
+data/automod.json
