@@ -6,10 +6,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Import error handler
+from utils.error_handler import ErrorHandler
 
 #importing moderation cogs
 #=============================================================================================================================================================
 from cogs.moderation.ban import Ban
+from cogs.moderation.unban import Unban  # Add the new Unban cog
 from cogs.moderation.kick import Kick
 from cogs.moderation.purge import Purge
 from cogs.moderation.timeout import Timeout
@@ -48,9 +51,14 @@ intents.members = True
 # Create the bot instance
 bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 
+# Initialize error handler
+error_handler = ErrorHandler(bot)
+error_handler.register_error_handlers()
+
 # Load Moderation cogs
 #=============================================================================================================================================================
 bot.add_cog(Ban(bot))
+bot.add_cog(Unban(bot))  # Add the Unban cog
 bot.add_cog(Kick(bot))
 bot.add_cog(Purge(bot))
 bot.add_cog(Timeout(bot))
