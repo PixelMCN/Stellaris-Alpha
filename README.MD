@@ -1,6 +1,8 @@
 # Stellara αlpha
 A powerful moderation bot for Discord servers.
 
+![banner](https://raw.githubusercontent.com/PixelMCN/Stellaris-Alpha/refs/heads/main/assets/banner.png "banner")
+
 ## Features
 ### Moderation
 - **Kick** - Remove users from your server
