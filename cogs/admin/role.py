@@ -39,13 +39,4 @@ class Role(commands.Cog):
             embed = nextcord.Embed(title="Role Removed from All Users", color=nextcord.Color.red())
             embed.add_field(name="Role", value=role.mention, inline=True)
             await interaction.response.send_message(embed=embed)
-        
-    #------------------------------------------------------------------------------------------------------------------------------------------------------------
-    @role.subcommand(name="list", description="List all roles in the server")
-    async def list_roles(self, interaction: Interaction):
-        roles = interaction.guild.roles
-        embed = nextcord.Embed(title="Roles in the Server", color=nextcord.Color.blue())
-        for role in roles:
-            embed.add_field(name=role.name, value=role.id, inline=False)
-        await interaction.response.send_message(embed=embed)
     #=============================================================================================================================================================

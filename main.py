@@ -13,9 +13,10 @@ from cogs.moderation.ban import Ban
 from cogs.moderation.kick import Kick
 from cogs.moderation.purge import Purge
 from cogs.moderation.timeout import Timeout
-from cogs.moderation.LockUnlock import LockUnlock
+from cogs.moderation.lock import LockUnlock
+from cogs.moderation.slowmode import Slowmode
 from cogs.moderation.mute import Mute
-from cogs.moderation.deafened import Deafen
+from cogs.moderation.deafen import Deafen
 #=============================================================================================================================================================
 
 
@@ -23,16 +24,17 @@ from cogs.moderation.deafened import Deafen
 #=============================================================================================================================================================
 from cogs.admin.role import Role
 from cogs.admin.logs import Logs
-from cogs.admin.channel import Channel
 from cogs.admin.autorole import AutoRole
 #=============================================================================================================================================================
 
 
 #importing utility cogs
 #=============================================================================================================================================================
-from cogs.utility.help import Help
 from cogs.utility.status import Status
 from cogs.utility.avatar import Avatar
+from cogs.utility.serverinfo import ServerInfo
+from cogs.utility.userinfo import UserInfo
+from cogs.utility.roleinfo import RoleInfo
 #=============================================================================================================================================================
 
 BOT_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -44,7 +46,7 @@ intents.guilds = True
 intents.members = True
 
 # Create the bot instance
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 
 # Load Moderation cogs
 #=============================================================================================================================================================
@@ -53,28 +55,24 @@ bot.add_cog(Kick(bot))
 bot.add_cog(Purge(bot))
 bot.add_cog(Timeout(bot))
 bot.add_cog(LockUnlock(bot))
+bot.add_cog(Slowmode(bot))
 bot.add_cog(Mute(bot))
 bot.add_cog(Deafen(bot))
 #=============================================================================================================================================================
-
-
 # Load Admin cogs
 #=============================================================================================================================================================
 bot.add_cog(Role(bot))
 bot.add_cog(Logs(bot))
-bot.add_cog(Channel(bot))
 bot.add_cog(AutoRole(bot))
 #=============================================================================================================================================================
-
-
 # Load utility cogs
 #=============================================================================================================================================================
-bot.add_cog(Help(bot))
 bot.add_cog(Status(bot))
 bot.add_cog(Avatar(bot))
+bot.add_cog(ServerInfo(bot))
+bot.add_cog(UserInfo(bot))
+bot.add_cog(RoleInfo(bot))
 #=============================================================================================================================================================
-
-
 # WILL IMPLEMENT THIS LATER LOL
 """
 # Load cogs automatically

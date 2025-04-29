@@ -55,27 +55,6 @@ class AutoRole(commands.Cog):
             color=nextcord.Color.green()
         )
         await interaction.response.send_message(embed=embed)
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="arset", description="Set the autorole for the server")
-    @commands.has_permissions(manage_roles=True)
-    async def autorole_set_prefix(self, ctx, role: nextcord.Role):
-        # Role hierarchy check
-        if role >= ctx.guild.me.top_role:
-            await ctx.send("I can't assign a role higher than or equal to my highest role.")
-            return
-
-        # Save autorole setting
-        autorole_settings[str(ctx.guild.id)] = role.id
-        save_roles(autorole_settings)
-        
-        embed = nextcord.Embed(
-            title="Autorole Set",
-            description=f"New members will now automatically receive the {role.mention} role.",
-            color=nextcord.Color.green()
-        )
-        await ctx.send(embed=embed)
-
     # AUTO ROLE REMOVE COMMANDS
     #=============================================================================================================================================================
     # Slash command implementation
@@ -98,24 +77,6 @@ class AutoRole(commands.Cog):
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message("No autorole is currently set for this server.", ephemeral=True)
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="arremove", description="Remove the autorole for the server")
-    @commands.has_permissions(manage_roles=True)
-    async def autorole_remove_prefix(self, ctx):
-        guild_id = str(ctx.guild.id)
-        if guild_id in autorole_settings:
-            del autorole_settings[guild_id]
-            save_roles(autorole_settings)
-            embed = nextcord.Embed(
-                title="Autorole Removed",
-                description="New members will no longer receive an automatic role.",
-                color=nextcord.Color.red()
-            )
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("No autorole is currently set for this server.")
-
     # AUTO ROLE VIEW COMMANDS
     #=============================================================================================================================================================
     # Slash command implementation
@@ -145,35 +106,6 @@ class AutoRole(commands.Cog):
             await interaction.response.send_message(embed=embed)
         else:
             await interaction.response.send_message("No autorole is currently set for this server.", ephemeral=True)
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="arview", description="View the current autorole for the server")
-    async def autorole_view_prefix(self, ctx):
-        guild_id = str(ctx.guild.id)
-        if guild_id in autorole_settings:
-            role_id = autorole_settings[guild_id]
-            role = ctx.guild.get_role(role_id)
-            
-            if role:
-                embed = nextcord.Embed(
-                    title="Current Autorole",
-                    description=f"New members will receive the {role.mention} role.",
-                    color=nextcord.Color.blue()
-                )
-            else:
-                embed = nextcord.Embed(
-                    title="Autorole Error",
-                    description="The configured role no longer exists. Please set a new autorole.",
-                    color=nextcord.Color.orange()
-                )
-                # Clean up the invalid role
-                del autorole_settings[guild_id]
-                save_roles(autorole_settings)
-            
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("No autorole is currently set for this server.")
-
     # AUTO ROLE ON JOIN 
     #=============================================================================================================================================================
     @commands.Cog.listener()

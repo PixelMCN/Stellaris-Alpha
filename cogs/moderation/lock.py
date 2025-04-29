@@ -17,18 +17,6 @@ class LockUnlock(commands.Cog):
 
         await channel.set_permissions(interaction.guild.default_role, send_messages=False)
         await interaction.response.send_message(f"Channel {channel.mention} has been locked.")
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="lock")
-    async def lock_prefix(self, ctx, channel: nextcord.TextChannel):
-        if not ctx.author.guild_permissions.manage_channels:
-            await ctx.send("This command requires `manage_channels permission`", ephemeral=True)
-            return
-
-        await channel.set_permissions(ctx.guild.default_role, send_messages=False)
-        await ctx.send(f"Channel {channel.mention} has been locked.")
-
-    
     # UNLOCK CHANNEL COMMAND
     #=============================================================================================================================================================
     # Slash command implementation
@@ -40,14 +28,4 @@ class LockUnlock(commands.Cog):
 
         await channel.set_permissions(interaction.guild.default_role, send_messages=True)
         await interaction.response.send_message(f"Channel {channel.mention} has been unlocked.")
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="unlock")
-    async def unlock_prefix(self, ctx, channel: nextcord.TextChannel):
-        if not ctx.author.guild_permissions.manage_channels:
-            await ctx.send("This command requires `manage_channels permission`", ephemeral=True)
-            return
-
-        await channel.set_permissions(ctx.guild.default_role, send_messages=True)
-        await ctx.send(f"Channel {channel.mention} has been unlocked.")
     #=============================================================================================================================================================

@@ -19,19 +19,5 @@ class Mute(commands.Cog):
                 await interaction.response.send_message("All members in the voice channel have been muted.")
         else:
             await interaction.response.send_message("You do not have permission to use this command.")
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command implementation
-    @commands.command(name="mute", description="Mute one or all members in a voice channel")
-    async def mute_prefix(self, ctx, member: nextcord.Member = None):
-        if ctx.author.guild_permissions.mute_members:
-            if member:
-                await member.edit(mute=True)
-                await ctx.send(f"{member.mention} has been muted.")
-            else:
-                for member in ctx.author.voice.channel.members:
-                    await member.edit(mute=True)
-                await ctx.send("All members in the voice channel have been muted.")
-        else:
-            await ctx.send("You do not have permission to use this command.")
     #=============================================================================================================================================================
             

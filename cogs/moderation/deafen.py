@@ -6,8 +6,10 @@ class Deafen(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # DEAFEN COMMANDS
     #=============================================================================================================================================================
-    @nextcord.slash_command(name="deafened", description="Deafen one or all members in a voice channel")
+    # Slash command implementation
+    @nextcord.slash_command(name="deafen", description="Deafen one or all members in a voice channel")
     async def deafened(self, interaction: nextcord.Interaction, member: nextcord.Member = nextcord.SlashOption(required=False)):
         if interaction.user.guild_permissions.deafen_members:
             if member:

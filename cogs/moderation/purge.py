@@ -1,10 +1,10 @@
 from nextcord.ext import commands
 import nextcord
-from typing import Optional
+from typing import Optional, List, Union
 
 
 class Purge(commands.Cog):
-    """A cog for message purging functionality"""
+    """A cog for message purging functionality with advanced filters"""
     
     def __init__(self, bot):
         self.bot = bot
@@ -18,11 +18,12 @@ class Purge(commands.Cog):
             return False, "You need the `Manage Messages` permission to use this command."
             
         return True, None
+
     #=============================================================================================================================================================
     # Slash command Implementation
     @nextcord.slash_command(
         name="purge",
-        description="Bulk delete messages from the current channel",
+        description="Bulk delete messages from the current channel with filters",
     )
     async def purge(
         self,
@@ -32,13 +33,25 @@ class Purge(commands.Cog):
             required=True,
             min_value=1,
             max_value=100
+        ),
+        filter_type: str = nextcord.SlashOption(
+            description="Type of messages to filter",
+            required=False,
+            choices=["all", "member", "bot", "attachments"],
+            default="all"
+        ),
+        member: nextcord.Member = nextcord.SlashOption(
+            description="Filter messages from a specific member (only used with member filter)",
+            required=False
         )
     ):
         """
-        Purge messages from the current channel
+        Purge messages from the current channel with filtering options
         Parameters:
             interaction (nextcord.Interaction): The interaction object
             amount (int): Number of messages to delete (1-100)
+            filter_type (str): Type of messages to filter (all, member, bot, attachments)
+            member (nextcord.Member): Optional member to filter messages from
         """
         try:
             # Check permissions first
@@ -47,15 +60,38 @@ class Purge(commands.Cog):
                 await interaction.response.send_message(error_msg, ephemeral=True)
                 return
 
+            # Check if member is provided when using member filter
+            if filter_type == "member" and member is None:
+                await interaction.response.send_message(
+                    "❌ You must specify a member when using the member filter.",
+                    ephemeral=True
+                )
+                return
+
             # Defer response since purging might take time
             await interaction.response.defer(ephemeral=True)
+            
+            # Create the appropriate check function based on filter_type
+            check = None
+            filter_description = "messages"
+            
+            if filter_type == "member" and member:
+                check = lambda m: m.author.id == member.id
+                filter_description = f"messages from {member.display_name}"
+            elif filter_type == "bot":
+                check = lambda m: m.author.bot
+                filter_description = "bot messages"
+            elif filter_type == "attachments":
+                check = lambda m: len(m.attachments) > 0
+                filter_description = "messages with attachments"
+            # "all" doesn't need a check function
 
-            # Purge messages
-            deleted = await interaction.channel.purge(limit=amount)  # +1 to account for command message
+            # Purge messages with the appropriate filter
+            deleted = await interaction.channel.purge(limit=amount, check=check)
             
             # Send success message
             await interaction.followup.send(
-                f"✨ Successfully purged {len(deleted)} messages.",
+                f"✨ Successfully purged {len(deleted)} {filter_description}.",
                 ephemeral=True
             )
 
@@ -74,27 +110,4 @@ class Purge(commands.Cog):
                 f"❌ An unexpected error occurred: {str(e)}",
                 ephemeral=True
             )
-    #-------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # Prefix command Implementation
-    @commands.command(name="purge", description="Bulk delete messages from the current channel")
-    @commands.has_permissions(manage_messages=True)
-    async def purge_prefix(self, ctx, amount: int = 10):
-        """
-        Purge messages from the current channel
-        Parameters:
-            ctx (commands.Context): The context object
-            amount (int): Number of messages to delete (1-100)
-        """
-        try:
-            # Defer response since purging might take time
-            await ctx.message.delete()
-            deleted = await ctx.channel.purge(limit=amount + 1)  # +1 to account for command message
-            await ctx.send(f"✨ Successfully purged {len(deleted)} messages.", delete_after=5)
-
-        except nextcord.errors.Forbidden:
-            await ctx.send("❌ I don't have the required permissions to delete messages.", delete_after=5)
-        except nextcord.HTTPException as e:
-            await ctx.send(f"❌ Failed to purge messages: {str(e)}", delete_after=5)
-        except Exception as e:
-            await ctx.send(f"❌ An unexpected error occurred: {str(e)}", delete_after=5)
     #=============================================================================================================================================================
