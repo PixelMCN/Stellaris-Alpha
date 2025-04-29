@@ -34,7 +34,7 @@ class Purge(commands.Cog):
             min_value=1,
             max_value=100
         ),
-        filter_type: str = nextcord.SlashOption(
+        filter: str = nextcord.SlashOption(
             description="Type of messages to filter",
             required=False,
             choices=["all", "member", "bot", "attachments"],
@@ -61,7 +61,7 @@ class Purge(commands.Cog):
                 return
 
             # Check if member is provided when using member filter
-            if filter_type == "member" and member is None:
+            if filter == "member" and member is None:
                 await interaction.response.send_message(
                     "❌ You must specify a member when using the member filter.",
                     ephemeral=True
@@ -75,19 +75,22 @@ class Purge(commands.Cog):
             check = None
             filter_description = "messages"
             
-            if filter_type == "member" and member:
+            if filter == "member" and member:
                 check = lambda m: m.author.id == member.id
                 filter_description = f"messages from {member.display_name}"
-            elif filter_type == "bot":
+            elif filter == "bot":
                 check = lambda m: m.author.bot
                 filter_description = "bot messages"
-            elif filter_type == "attachments":
+            elif filter == "attachments":
                 check = lambda m: len(m.attachments) > 0
                 filter_description = "messages with attachments"
-            # "all" doesn't need a check function
-
-            # Purge messages with the appropriate filter
-            deleted = await interaction.channel.purge(limit=amount, check=check)
+            
+            # Execute purge with or without check function
+            if check is not None:
+                deleted = await interaction.channel.purge(limit=amount, check=check)
+            else:
+                # For "all" type, don't provide a check function
+                deleted = await interaction.channel.purge(limit=amount)
             
             # Send success message
             await interaction.followup.send(
@@ -110,4 +113,4 @@ class Purge(commands.Cog):
                 f"❌ An unexpected error occurred: {str(e)}",
                 ephemeral=True
             )
-    #=============================================================================================================================================================
+    #============================================================================================================================================================="

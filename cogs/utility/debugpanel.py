@@ -8,12 +8,33 @@ import platform
 # Bot version constant
 BOT_VERSION = 'v1.0.0'  # Update this when you update your bot
 
-class Status(commands.Cog):
+class DebugPanelView(nextcord.ui.View):
+    def __init__(self):
+        super().__init__()
+        
+        # Add the buttons with their URLs
+        self.add_item(nextcord.ui.Button(
+            label="Support Server",
+            url="https://discord.gg/wqgvsuw7r8",
+            emoji="💬"
+        ))
+        self.add_item(nextcord.ui.Button(
+            label="Docs",
+            url="https://your-documentation-url.com",
+            emoji="📖"
+        ))
+        self.add_item(nextcord.ui.Button(
+            label="GitHub",
+            url="https://github.com/PixelMCN/Stellaris-Alpha",
+            emoji="🔗"
+        ))
+
+class Debug(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     #=============================================================================================================================================================
-    @nextcord.slash_command(name="status", description="Shows the system resources used by bot")
-    async def status(self, interaction: nextcord.Interaction):
+    @nextcord.slash_command(name="debug", description="Shows the system resources used by bot")
+    async def debug(self, interaction: nextcord.Interaction):
         # System resources calculation
         total_memory = round(psutil.virtual_memory().total / 1024 / 1024)
         free_memory = round(psutil.virtual_memory().available / 1024 / 1024)
@@ -38,7 +59,7 @@ class Status(commands.Cog):
 
         embed = nextcord.Embed(
             color=0x5865F2,
-            title='Bot Status Dashboard',
+            title='Debug Panel',
             description='Current performance metrics and statistics'
         )
 
@@ -83,14 +104,18 @@ class Status(commands.Cog):
             inline=False
         )
 
+        embed.set_image(url="https://cdn.discordapp.com/attachments/1366785280232919140/1366786756812341288/Stellara_BANNER_V2.png?ex=681236dc&is=6810e55c&hm=02ceeb42a09e3432af39c2b9426e3bab82243c2d654a26b27cd8eaadc2637990&")
         embed.set_footer(text=f'Requested by {interaction.user}', icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         embed.timestamp = nextcord.utils.utcnow()
 
-        await interaction.response.send_message(embed=embed)
+        # Create view with link buttons
+        view = DebugPanelView()
+        
+        await interaction.response.send_message(embed=embed, view=view)
     #------------------------------------------------------------------------------------------------------------------------------------------------------------
     # Prefix command implementation
-    @commands.command(name="status", description="Shows the system resources used by bot")
-    async def status_prefix(self, ctx):
+    @commands.command(name="debug", description="Shows the system resources used by bot")
+    async def debug_prefix(self, ctx):
         # System resources calculation
         total_memory = round(psutil.virtual_memory().total / 1024 / 1024)
         free_memory = round(psutil.virtual_memory().available / 1024 / 1024)
@@ -115,7 +140,7 @@ class Status(commands.Cog):
 
         embed = nextcord.Embed(
             color=0x5865F2,
-            title='Bot Status Dashboard',
+            title='Debug Panel',
             description='Current performance metrics and statistics'
         )
         # System Resources Field
@@ -156,8 +181,12 @@ class Status(commands.Cog):
                   f'```',
             inline=False
         )
+        embed.set_image(url="https://cdn.discordapp.com/attachments/1366785280232919140/1366786756812341288/Stellara_BANNER_V2.png?ex=681236dc&is=6810e55c&hm=02ceeb42a09e3432af39c2b9426e3bab82243c2d654a26b27cd8eaadc2637990&")
         embed.set_footer(text=f'Requested by {ctx.author}', icon_url=ctx.author.avatar.url if ctx.author.avatar else None)
         embed.timestamp = nextcord.utils.utcnow()
 
-        await ctx.send(embed=embed)
+        # Create view with link buttons
+        view = DebugPanelView()
+        
+        await ctx.send(embed=embed, view=view)
     #=============================================================================================================================================================

@@ -30,7 +30,7 @@ from cogs.admin.autorole import AutoRole
 
 #importing utility cogs
 #=============================================================================================================================================================
-from cogs.utility.status import Status
+from cogs.utility.debugpanel import Debug
 from cogs.utility.avatar import Avatar
 from cogs.utility.serverinfo import ServerInfo
 from cogs.utility.userinfo import UserInfo
@@ -67,7 +67,7 @@ bot.add_cog(AutoRole(bot))
 #=============================================================================================================================================================
 # Load utility cogs
 #=============================================================================================================================================================
-bot.add_cog(Status(bot))
+bot.add_cog(Debug(bot))
 bot.add_cog(Avatar(bot))
 bot.add_cog(ServerInfo(bot))
 bot.add_cog(UserInfo(bot))
