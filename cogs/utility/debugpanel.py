@@ -104,7 +104,7 @@ class Debug(commands.Cog):
             inline=False
         )
 
-        embed.set_image(url="https://cdn.discordapp.com/attachments/1366785280232919140/1366786756812341288/Stellara_BANNER_V2.png?ex=681236dc&is=6810e55c&hm=02ceeb42a09e3432af39c2b9426e3bab82243c2d654a26b27cd8eaadc2637990&")
+        embed.set_image(url="https://raw.githubusercontent.com/PixelMCN/Stellaris-Alpha/refs/heads/main/assets/banner.png")
         embed.set_footer(text=f'Requested by {interaction.user}', icon_url=interaction.user.avatar.url if interaction.user.avatar else None)
         embed.timestamp = nextcord.utils.utcnow()
 
@@ -181,7 +181,7 @@ class Debug(commands.Cog):
                   f'```',
             inline=False
         )
-        embed.set_image(url="https://cdn.discordapp.com/attachments/1366785280232919140/1366786756812341288/Stellara_BANNER_V2.png?ex=681236dc&is=6810e55c&hm=02ceeb42a09e3432af39c2b9426e3bab82243c2d654a26b27cd8eaadc2637990&")
+        embed.set_image(url="https://raw.githubusercontent.com/PixelMCN/Stellaris-Alpha/refs/heads/main/assets/banner.png")
         embed.set_footer(text=f'Requested by {ctx.author}', icon_url=ctx.author.avatar.url if ctx.author.avatar else None)
         embed.timestamp = nextcord.utils.utcnow()
 
