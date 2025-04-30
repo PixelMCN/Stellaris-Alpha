@@ -1,0 +1,24 @@
+{
+    "enabled": false,
+    "guild_settings": {
+        "1337681161933160520": {
+            "enabled": true,
+            "log_channel_id": null,
+            "filtered_words": [],
+            "spam_threshold": 5,
+            "spam_time_window": 3,
+            "caps_threshold": 70,
+            "min_chars_for_caps": 10,
+            "max_mentions": 3,
+            "invite_filter": true,
+            "link_filter": false,
+            "allowed_links": [],
+            "warn_on_delete": true,
+            "auto_timeout": {
+                "enabled": false,
+                "violations_threshold": 3,
+                "timeout_duration": 5
+            }
+        }
+    }
+}

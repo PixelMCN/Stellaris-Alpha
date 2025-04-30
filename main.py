@@ -20,7 +20,6 @@ from cogs.moderation.lock import LockUnlock
 from cogs.moderation.slowmode import Slowmode
 from cogs.moderation.mute import MuteSystem
 from cogs.moderation.deafen import DeafenSystem
-#from cogs.moderation.automod import AutoMod  # WIP
 #=============================================================================================================================================================
 
 
@@ -66,7 +65,6 @@ bot.add_cog(LockUnlock(bot))
 bot.add_cog(Slowmode(bot))
 bot.add_cog(MuteSystem(bot))
 bot.add_cog(DeafenSystem(bot))
-#bot.add_cog(AutoMod(bot))  # Still needs a bit of work ;-;
 #=============================================================================================================================================================
 # Load Admin cogs
 #=============================================================================================================================================================
