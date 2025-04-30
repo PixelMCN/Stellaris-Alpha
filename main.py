@@ -12,7 +12,7 @@ from utils.error_handler import ErrorHandler
 #importing moderation cogs
 #=============================================================================================================================================================
 from cogs.moderation.ban import Ban
-from cogs.moderation.unban import Unban  # Add the new Unban cog
+from cogs.moderation.unban import Unban  
 from cogs.moderation.kick import Kick
 from cogs.moderation.purge import Purge
 from cogs.moderation.timeout import Timeout
@@ -20,7 +20,7 @@ from cogs.moderation.lock import LockUnlock
 from cogs.moderation.slowmode import Slowmode
 from cogs.moderation.mute import Mute
 from cogs.moderation.deafen import Deafen
-# from cogs.moderation.automod import AutoMod  # Import the new AutoMod cog
+# from cogs.moderation.automod import AutoMod  # WIP
 #=============================================================================================================================================================
 
 
@@ -59,7 +59,7 @@ bot.error_handler.register_error_handlers()
 # Load Moderation cogs
 #=============================================================================================================================================================
 bot.add_cog(Ban(bot))
-bot.add_cog(Unban(bot))  # Add the Unban cog
+bot.add_cog(Unban(bot))  
 bot.add_cog(Kick(bot))
 bot.add_cog(Purge(bot))
 bot.add_cog(Timeout(bot))
@@ -67,7 +67,7 @@ bot.add_cog(LockUnlock(bot))
 bot.add_cog(Slowmode(bot))
 bot.add_cog(Mute(bot))
 bot.add_cog(Deafen(bot))
-# bot.add_cog(AutoMod(bot))  # Add the AutoMod cog
+# bot.add_cog(AutoMod(bot))  # Still needs a bit of work ;-;
 #=============================================================================================================================================================
 # Load Admin cogs
 #=============================================================================================================================================================
