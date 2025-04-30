@@ -1,6 +1,22 @@
 import nextcord
 import datetime
 from nextcord.ext import commands
+import asyncio
+
+class ConfirmView(nextcord.ui.View):
+    def __init__(self, timeout=60.0):
+        super().__init__(timeout=timeout)
+        self.value = None
+
+    @nextcord.ui.button(label="Confirm", style=nextcord.ButtonStyle.green, emoji="✅")
+    async def confirm(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        self.value = True
+        self.stop()
+        
+    @nextcord.ui.button(label="Cancel", style=nextcord.ButtonStyle.grey, emoji="❌")
+    async def cancel(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        self.value = False
+        self.stop()
 
 class Logs(commands.Cog):
     def __init__(self, bot):
@@ -12,10 +28,20 @@ class Logs(commands.Cog):
     # LOGS SETUP COMMAND - FIXED VERSION
     #=============================================================================================================================================================
     # Slash command implementation
-    @nextcord.slash_command(name="logs", description="Creates logging channels in a Logs category for messages & server events")
+    @nextcord.slash_command(
+        name="logs", 
+        description="Setup logging channels for server activity and moderation",
+        default_member_permissions=nextcord.Permissions(manage_channels=True)
+    )
     async def logs(self, ctx: nextcord.Interaction):
+        # Check permissions first
         if not ctx.user.guild_permissions.manage_channels:
-            await ctx.response.send_message("This command requires `manage channels` permission", ephemeral=True)
+            embed = nextcord.Embed(
+                title="⛔ Permission Denied",
+                description="You need the `Manage Channels` permission to use this command.",
+                color=nextcord.Color.red()
+            )
+            await ctx.response.send_message(embed=embed, ephemeral=True)
             return
 
         # Acknowledge the interaction immediately to prevent timeout
@@ -23,48 +49,148 @@ class Logs(commands.Cog):
         
         guild = ctx.guild
 
+        # Create confirmation view
+        confirm_embed = nextcord.Embed(
+            title="📝 Logs Setup Confirmation",
+            description=(
+                "This will create or ensure the following log channels exist:\n"
+                "• `message-logs` - For message edits and deletions\n"
+                "• `server-logs` - For server changes and updates\n"
+                "• `voice-logs` - For voice channel activity\n"
+                "• `mod-logs` - For moderation actions\n\n"
+                "These channels will be placed in a `Logs` category with appropriate permissions."
+            ),
+            color=nextcord.Color.blue()
+        )
+        confirm_embed.set_footer(text="Only users with administrator permissions will be able to view these channels.")
+
+        view = ConfirmView(timeout=60.0)
+        await ctx.followup.send(embed=confirm_embed, view=view, ephemeral=True)
+        
+        # Wait for confirmation
+        await view.wait()
+        if view.value is None:
+            timeout_embed = nextcord.Embed(
+                title="⏱️ Timed Out",
+                description="Logs setup timed out. Please try again.",
+                color=nextcord.Color.grey()
+            )
+            return await ctx.edit_original_message(embed=timeout_embed, view=None)
+        elif not view.value:
+            cancel_embed = nextcord.Embed(
+                title="❌ Setup Cancelled",
+                description="Logs setup was cancelled.",
+                color=nextcord.Color.grey()
+            )
+            return await ctx.edit_original_message(embed=cancel_embed, view=None)
+
+        # Show processing message
+        processing_embed = nextcord.Embed(
+            title="⏳ Setting Up Logs",
+            description="Creating logging channels and setting permissions...",
+            color=nextcord.Color.blue()
+        )
+        await ctx.edit_original_message(embed=processing_embed, view=None)
+
         # Create a category for logs if it doesn't exist
-        admin_role = nextcord.utils.get(guild.roles, permissions=nextcord.Permissions(administrator=True))
-        overwrites = {
-            guild.default_role: nextcord.PermissionOverwrite(view_channel=False),
-        }
-        if admin_role:
-            overwrites[admin_role] = nextcord.PermissionOverwrite(view_channel=True)
-        else:
-            # If no role with admin permission is found, allow only users with admin permission
+        try:
+            # Find roles with admin permissions
+            admin_roles = []
             for role in guild.roles:
                 if role.permissions.administrator:
-                    overwrites[role] = nextcord.PermissionOverwrite(view_channel=True)
+                    admin_roles.append(role)
 
-        log_category = nextcord.utils.get(guild.categories, name="Logs")
-        if not log_category:
-            log_category = await guild.create_category("Logs", overwrites=overwrites)
+            # Set up permission overwrites
+            overwrites = {
+                guild.default_role: nextcord.PermissionOverwrite(view_channel=False),
+            }
+            
+            # Add all admin roles to the permission overwrites
+            for role in admin_roles:
+                overwrites[role] = nextcord.PermissionOverwrite(view_channel=True)
+            
+            # Add the server owner explicitly
+            if guild.owner:
+                member = guild.get_member(guild.owner.id)
+                if member:
+                    overwrites[member] = nextcord.PermissionOverwrite(view_channel=True)
 
-        # Define channel names (added mod-logs)
-        channel_names = {
-            "message-logs": "Channel for message logging",
-            "server-logs": "Channel for server updates logging",
-            "voice-logs": "Channel for voice logging",
-            "mod-logs": "Channel for moderation action logging"
-        }
-
-        created_channels = []
-        for name, purpose in channel_names.items():
-            existing_channel = nextcord.utils.get(guild.text_channels, name=name)
-            if not existing_channel:
-                channel = await guild.create_text_channel(name, category=log_category, topic=purpose)
-                created_channels.append(channel.mention)
+            # Check if Logs category exists
+            log_category = nextcord.utils.get(guild.categories, name="Logs")
+            if not log_category:
+                log_category = await guild.create_category("Logs", overwrites=overwrites)
+                category_status = "✅ Created new `Logs` category"
             else:
-                created_channels.append(existing_channel.mention)
+                # Update permissions on existing category
+                await log_category.edit(overwrites=overwrites)
+                category_status = "✅ Updated existing `Logs` category"
 
-        await ctx.followup.send(
-            f"Logging channels created or already exist:\n"
-            f"Message Logs: {created_channels[0]}\n"
-            f"Server Logs: {created_channels[1]}\n"
-            f"Voice Logs: {created_channels[2]}\n"
-            f"Mod Logs: {created_channels[3]}",
-            ephemeral=True
-        )
+            # Define channel names with better descriptions
+            channel_names = {
+                "message-logs": "Records edited and deleted messages",
+                "server-logs": "Tracks server changes (channels, roles, etc.)",
+                "voice-logs": "Monitors voice channel activity",
+                "mod-logs": "Documents all moderation actions"
+            }
+
+            # Create or update channels
+            created_channels = []
+            updated_channels = []
+            
+            for name, purpose in channel_names.items():
+                existing_channel = nextcord.utils.get(guild.text_channels, name=name)
+                if not existing_channel:
+                    channel = await guild.create_text_channel(name, category=log_category, topic=purpose)
+                    created_channels.append(f"✅ Created `{name}`")
+                else:
+                    # Update channel topic if needed
+                    if existing_channel.topic != purpose:
+                        await existing_channel.edit(topic=purpose)
+                    
+                    # Move to logs category if not already there
+                    if existing_channel.category != log_category:
+                        await existing_channel.edit(category=log_category)
+                        
+                    updated_channels.append(f"✅ Updated `{name}`")
+            
+            # Create success embed
+            success_embed = nextcord.Embed(
+                title="✅ Logs Setup Complete",
+                description=f"{category_status}",
+                color=nextcord.Color.green()
+            )
+            
+            # Add fields for created and updated channels
+            if created_channels:
+                success_embed.add_field(
+                    name="📝 Channels Created",
+                    value="\n".join(created_channels),
+                    inline=False
+                )
+            
+            if updated_channels:
+                success_embed.add_field(
+                    name="🔄 Channels Updated",
+                    value="\n".join(updated_channels),
+                    inline=False
+                )
+                
+            success_embed.add_field(
+                name="📋 Next Steps",
+                value="Your logging system is now ready! All server events will be automatically recorded in the appropriate channels.",
+                inline=False
+            )
+            
+            await ctx.edit_original_message(embed=success_embed, view=None)
+            
+        except Exception as e:
+            # Handle errors gracefully
+            error_embed = nextcord.Embed(
+                title="❌ Setup Error",
+                description=f"An error occurred while setting up logs: ```{str(e)}```\nPlease check the bot's permissions and try again.",
+                color=nextcord.Color.red()
+            )
+            await ctx.edit_original_message(embed=error_embed, view=None)
 
     # MESSAGE DELETE
     #=============================================================================================================================================================
@@ -95,7 +221,6 @@ class Logs(commands.Cog):
             embed.set_footer(text=f"User ID: {message.author.id} | Message ID: {message.id}")
             await logs_channel.send(embed=embed)
     #=============================================================================================================================================================
-
 
     # MESSAGE EDIT
     #=============================================================================================================================================================

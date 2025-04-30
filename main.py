@@ -18,9 +18,9 @@ from cogs.moderation.purge import Purge
 from cogs.moderation.timeout import Timeout
 from cogs.moderation.lock import LockUnlock
 from cogs.moderation.slowmode import Slowmode
-from cogs.moderation.mute import Mute
-from cogs.moderation.deafen import Deafen
-# from cogs.moderation.automod import AutoMod  # WIP
+from cogs.moderation.mute import MuteSystem
+from cogs.moderation.deafen import DeafenSystem
+#from cogs.moderation.automod import AutoMod  # WIP
 #=============================================================================================================================================================
 
 
@@ -38,7 +38,6 @@ from cogs.utility.debugpanel import Debug
 from cogs.utility.avatar import Avatar
 from cogs.utility.serverinfo import ServerInfo
 from cogs.utility.userinfo import UserInfo
-from cogs.utility.roleinfo import RoleInfo
 #=============================================================================================================================================================
 
 BOT_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -65,9 +64,9 @@ bot.add_cog(Purge(bot))
 bot.add_cog(Timeout(bot))
 bot.add_cog(LockUnlock(bot))
 bot.add_cog(Slowmode(bot))
-bot.add_cog(Mute(bot))
-bot.add_cog(Deafen(bot))
-# bot.add_cog(AutoMod(bot))  # Still needs a bit of work ;-;
+bot.add_cog(MuteSystem(bot))
+bot.add_cog(DeafenSystem(bot))
+#bot.add_cog(AutoMod(bot))  # Still needs a bit of work ;-;
 #=============================================================================================================================================================
 # Load Admin cogs
 #=============================================================================================================================================================
@@ -81,7 +80,6 @@ bot.add_cog(Debug(bot))
 bot.add_cog(Avatar(bot))
 bot.add_cog(ServerInfo(bot))
 bot.add_cog(UserInfo(bot))
-bot.add_cog(RoleInfo(bot))
 #=============================================================================================================================================================
 # WILL IMPLEMENT THIS LATER LOL
 """

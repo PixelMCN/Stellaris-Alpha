@@ -2,7 +2,6 @@ import nextcord
 import traceback
 import sys
 import datetime
-from typing import Optional, Union, Callable, Coroutine, Any
 
 class ErrorHandler:
     def __init__(self, bot):
