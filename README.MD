@@ -12,27 +12,33 @@
 ## Admin
 | Command | Description |
 |---------|-------------|
-| **Autorole** | Automatically assign roles to new members |
 | **Logs** | Configure and manage server logs |
 | **Role** | Manage server roles and permissions |
+| **Autorole** | Automatically assign roles to new members |
 
 ## Moderation
 | Command | Description |
 |---------|-------------|
 | **AutoMod** | Automated message moderation with toggleable features |
 | **Kick** | Remove users from your server |
+| **Softban** | Kick users and delete their messages |
 | **Ban** | Permanently ban users from your server |
 | **Unban** | Remove bans from previously banned users |
+| **Baninfo** | Get information about banned users |
 | **Purge** | Bulk delete messages in a channel |
+| **Clear** | Clear all messages in a channel |
 | **Timeout** | Temporarily restrict a user's ability to interact |
 | **Mute** | Prevent users from sending messages |
 | **Deafen** | Prevent users from hearing or speaking in voice channels |
+| **Slowmode** | Set, modify, or remove slowmode in a channel |
+| **Slowmode-info** | Show information about current slowmode settings |
 | **Lock** | Restrict access to specific channels |
 | **Unlock** | Restore access to previously locked channels |
 
 ## Utility
 | Command | Description |
 |---------|-------------|
+| **Debug** | Show detailed bot diagnostics and system information |
 | **Status** | Check bot and server status |
 | **Avatar** | Display or save user avatars |
 | **Server Info** | View detailed information about the server |
