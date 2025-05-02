@@ -36,6 +36,8 @@ from cogs.admin.autorole import Autorole
 
 #importing utility cogs
 #=============================================================================================================================================================
+from cogs.utility.help import HelpCommand
+from cogs.utility.activity import ActivityManager
 from cogs.utility.debugpanel import Debug
 from cogs.utility.avatar import Avatar
 from cogs.utility.serverinfo import ServerInfo
@@ -79,6 +81,8 @@ bot.add_cog(Autorole(bot))
 #=============================================================================================================================================================
 # Load utility cogs
 #=============================================================================================================================================================
+bot.add_cog(HelpCommand(bot))
+bot.add_cog(ActivityManager(bot))
 bot.add_cog(Debug(bot))
 bot.add_cog(Avatar(bot))
 bot.add_cog(ServerInfo(bot))

@@ -21,7 +21,7 @@ class Avatar(commands.Cog):
         interaction: The slash command interaction
         member: Optional - The member whose avatar to display. If not provided, shows your own avatar.
         """
-        await interaction.response.defer()
+        # Don't defer - respond immediately
         if member is None:
             member = interaction.user
             
@@ -34,6 +34,6 @@ class Avatar(commands.Cog):
         )
         embed.set_image(url=avatar_url)
         
-        await interaction.followup.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     #=============================================================================================================================================================
         
