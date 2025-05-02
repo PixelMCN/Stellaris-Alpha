@@ -1,340 +1,391 @@
 import nextcord
+from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
-from nextcord import Interaction, ui
 import json
 import os
-from typing import Optional, List
+import time
+from typing import List, Dict, Optional, Union
+import asyncio
 
-# Using a JSON file to store role IDs.
-# Only for demonstration & development purposes, not for production use.
-# The production version will use MongoDB for persistent storage. 
-ROLE_FILE = os.path.join("data", "roles.json")
+from utils.embed_helper import EmbedHelper
+from utils.error_handler import ErrorHandler
+from utils.time_helper import TimeHelper
 
-def load_roles():
-    if os.path.exists(ROLE_FILE):
-        with open(ROLE_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_roles(data):
-    os.makedirs(os.path.dirname(ROLE_FILE), exist_ok=True)
-    with open(ROLE_FILE, "w") as f:
-        json.dump(data, f)
-
-autorole_settings = load_roles()
-
-# AUTOROLE SETUP WIZARD
+# File to store autorole configuration
+AUTOROLE_CONFIG_FILE = "./data/autorole.json"
 #=============================================================================================================================================================
-class RoleSelectView(ui.View):
-    def __init__(self, roles: List[nextcord.Role], timeout: float = 180.0):
-        super().__init__(timeout=timeout)
-        self.selected_role = None
-        
-        # Create a select menu with roles
-        self.role_select = ui.Select(
-            placeholder="Choose a role to automatically assign to new members...",
-            min_values=1,
-            max_values=1,
-            options=[
-                nextcord.SelectOption(
-                    label=role.name[:25],  # Discord limits option labels to 25 chars
-                    value=str(role.id),
-                    description=f"Assign {role.name} to new members",
-                    emoji="🏷️"
-                ) for role in roles[:25]  # Discord limits to 25 options
-            ]
-        )
-        
-        self.role_select.callback = self.role_selected
-        self.add_item(self.role_select)
-        
-    async def role_selected(self, interaction: Interaction):
-        self.selected_role = interaction.guild.get_role(int(self.role_select.values[0]))
-        self.stop()
-        
-class ConfirmView(ui.View):
-    def __init__(self, timeout: float = 60.0):
+class AutoroleView(nextcord.ui.View):
+    """Interactive confirmation view for autorole actions"""
+    def __init__(self, *, timeout=180):
         super().__init__(timeout=timeout)
         self.value = None
-        
-    @ui.button(label="Confirm", style=nextcord.ButtonStyle.green, emoji="✅")
-    async def confirm(self, button: ui.Button, interaction: Interaction):
+    
+    @nextcord.ui.button(label="Confirm", style=nextcord.ButtonStyle.green, emoji="✅")
+    async def confirm(self, button: nextcord.ui.Button, interaction: Interaction):
         self.value = True
         self.stop()
-        
-    @ui.button(label="Cancel", style=nextcord.ButtonStyle.grey, emoji="❌")
-    async def cancel(self, button: ui.Button, interaction: Interaction):
+        await interaction.response.defer()
+    
+    @nextcord.ui.button(label="Cancel", style=nextcord.ButtonStyle.red, emoji="❌")
+    async def cancel(self, button: nextcord.ui.Button, interaction: Interaction):
         self.value = False
         self.stop()
-
-class AutoRoleManagementView(ui.View):
-    def __init__(self, bot, current_role: Optional[nextcord.Role] = None, timeout: float = 300.0):
-        super().__init__(timeout=timeout)
-        self.bot = bot
-        self.current_role = current_role
-        
-    @ui.button(label="Set Auto Role", style=nextcord.ButtonStyle.primary, emoji="⚙️", row=0)
-    async def set_autorole(self, button: ui.Button, interaction: Interaction):
-        # Check permissions
-        if not interaction.user.guild_permissions.manage_roles:
-            return await interaction.response.send_message(
-                "You need the **Manage Roles** permission to configure automatic role assignments.",
-                ephemeral=True
-            )
-            
-        # Get assignable roles (roles below the bot's highest role)
-        assignable_roles = [
-            role for role in interaction.guild.roles 
-            if role < interaction.guild.me.top_role and not role.is_default()
-        ]
-        
-        if not assignable_roles:
-            return await interaction.response.send_message(
-                "There are no roles I can assign. Please create a role below my highest role.",
-                ephemeral=True
-            )
-            
-        # Show role selection menu
-        view = RoleSelectView(assignable_roles)
-        await interaction.response.send_message(
-            "Please select a role to automatically assign to new members:",
-            view=view,
-            ephemeral=True
-        )
-        
-        # Wait for role selection
-        timed_out = await view.wait()
-        if timed_out or not view.selected_role:
-            return await interaction.edit_original_message(
-                content="Role selection timed out or was cancelled.",
-                view=None
-            )
-            
-        selected_role = view.selected_role
-        
-        # Confirm the selection
-        confirm_embed = nextcord.Embed(
-            title="Confirm Auto Role Setup",
-            description=f"New members will automatically receive the {selected_role.mention} role when they join the server.",
-            color=nextcord.Color.blue()
-        )
-        confirm_view = ConfirmView()
-        
-        await interaction.edit_original_message(
-            content=None,
-            embed=confirm_embed,
-            view=confirm_view
-        )
-        
-        # Wait for confirmation
-        timed_out = await confirm_view.wait()
-        if timed_out or not confirm_view.value:
-            return await interaction.edit_original_message(
-                content="Auto role setup was cancelled.",
-                embed=None,
-                view=None
-            )
-            
-        # Save the role setting
-        autorole_settings[str(interaction.guild.id)] = selected_role.id
-        save_roles(autorole_settings)
-        
-        success_embed = nextcord.Embed(
-            title="✅ Automatic Role Setup Complete",
-            description=f"New members will now automatically receive the {selected_role.mention} role when they join.",
-            color=nextcord.Color.green()
-        )
-        
-        await interaction.edit_original_message(
-            content=None,
-            embed=success_embed,
-            view=None
-        )
-        
-    @ui.button(label="Remove Auto Role", style=nextcord.ButtonStyle.danger, emoji="🚫", row=0)
-    async def remove_autorole(self, button: ui.Button, interaction: Interaction):
-        # Check permissions
-        if not interaction.user.guild_permissions.manage_roles:
-            return await interaction.response.send_message(
-                "You need the **Manage Roles** permission to configure automatic role assignments.",
-                ephemeral=True
-            )
-            
-        guild_id = str(interaction.guild.id)
-        if guild_id not in autorole_settings:
-            return await interaction.response.send_message(
-                "There's no automatic role currently configured for this server.",
-                ephemeral=True
-            )
-            
-        # Get the current role for reference
-        role_id = autorole_settings[guild_id]
-        role = interaction.guild.get_role(role_id)
-        role_mention = role.mention if role else "the previously set role"
-        
-        # Confirm removal
-        confirm_embed = nextcord.Embed(
-            title="Confirm Auto Role Removal",
-            description=f"Are you sure you want to stop automatically assigning {role_mention} to new members?",
-            color=nextcord.Color.orange()
-        )
-        confirm_view = ConfirmView()
-        
-        await interaction.response.send_message(
-            embed=confirm_embed,
-            view=confirm_view,
-            ephemeral=True
-        )
-        
-        # Wait for confirmation
-        timed_out = await confirm_view.wait()
-        if timed_out or not confirm_view.value:
-            return await interaction.edit_original_message(
-                content="Auto role removal was cancelled.",
-                embed=None,
-                view=None
-            )
-            
-        # Remove the autorole setting
-        del autorole_settings[guild_id]
-        save_roles(autorole_settings)
-        
-        success_embed = nextcord.Embed(
-            title="🚫 Automatic Role Disabled",
-            description=f"New members will no longer receive {role_mention} when they join.",
-            color=nextcord.Color.red()
-        )
-        
-        await interaction.edit_original_message(
-            content=None,
-            embed=success_embed,
-            view=None
-        )
-        
-    @ui.button(label="View Current Setting", style=nextcord.ButtonStyle.secondary, emoji="🔍", row=1)
-    async def view_autorole(self, button: ui.Button, interaction: Interaction):
-        guild_id = str(interaction.guild.id)
-        if guild_id in autorole_settings:
-            role_id = autorole_settings[guild_id]
-            role = interaction.guild.get_role(role_id)
-            
-            if role:
-                embed = nextcord.Embed(
-                    title="🔍 Current Automatic Role",
-                    description=f"New members who join this server will automatically receive the {role.mention} role.",
-                    color=nextcord.Color.blue()
-                )
-            else:
-                embed = nextcord.Embed(
-                    title="⚠️ Configured Role Not Found",
-                    description="The previously configured role no longer exists in this server. Please set a new automatic role.",
-                    color=nextcord.Color.orange()
-                )
-                
-                # Clean up the invalid role
-                del autorole_settings[guild_id]
-                save_roles(autorole_settings)
-        else:
-            embed = nextcord.Embed(
-                title="ℹ️ No Automatic Role Configured",
-                description="There's currently no automatic role set up for new members in this server.",
-                color=nextcord.Color.blue()
-            )
-            
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-class AutoRole(commands.Cog):
+        await interaction.response.defer()
+#=============================================================================================================================================================
+class Autorole(commands.Cog):
+    """Cog for automatically assigning roles to new members"""
     def __init__(self, bot):
         self.bot = bot
-
-    # AUTOROLE MAIN COMMAND
+        self.autorole_config = {}
+        
+        # Create data directory if it doesn't exist
+        os.makedirs(os.path.dirname(AUTOROLE_CONFIG_FILE), exist_ok=True)
+        
+        self.load_config()
+    
+    def load_config(self):
+        """Load autorole configuration from file"""
+        try:
+            if os.path.exists(AUTOROLE_CONFIG_FILE):
+                with open(AUTOROLE_CONFIG_FILE, 'r') as f:
+                    self.autorole_config = json.load(f)
+        except Exception as e:
+            self.bot.logger.error(f"Error loading autorole config: {e}")
+            self.autorole_config = {}
+    
+    def save_config(self):
+        """Save autorole configuration to file"""
+        try:
+            with open(AUTOROLE_CONFIG_FILE, 'w') as f:
+                json.dump(self.autorole_config, f, indent=4)
+        except Exception as e:
+            self.bot.logger.error(f"Error saving autorole config: {e}")
+    
+    def _check_permissions(self, interaction: Interaction) -> bool:
+        """Check if the user has the required permissions"""
+        if not interaction.user.guild_permissions.manage_roles:
+            return False
+        return True
+    
+    def _format_delay_text(self, delay_seconds: Optional[int]) -> str:
+        """Format delay text for display"""
+        if not delay_seconds:
+            return ""
+        
+        return f" with a {TimeHelper.format_time_remaining(time.time() + delay_seconds)} delay"
     #=============================================================================================================================================================
     @nextcord.slash_command(
         name="autorole", 
-        description="Manage automatic role assignments for new members",
-        default_member_permissions=nextcord.Permissions(manage_roles=True)
+        description="Configure automatic role assignment for new members"
     )
     async def autorole(self, interaction: Interaction):
-        """Interactive menu to manage automatic role assignments for new members"""
-        # Check if user has manage roles permission
-        if not interaction.user.guild_permissions.manage_roles:
-            embed = nextcord.Embed(
-                title="⚠️ Permission Required",
-                description="You need the **Manage Roles** permission to configure automatic role assignments.",
-                color=nextcord.Color.yellow()
-            )
-            return await interaction.response.send_message(embed=embed, ephemeral=True)
-        
-        # Check if bot has manage roles permission
-        if not interaction.guild.me.guild_permissions.manage_roles:
-            embed = nextcord.Embed(
-                title="⚠️ Bot Permission Required",
-                description="I need the **Manage Roles** permission to assign roles to new members.",
-                color=nextcord.Color.yellow()
-            )
-            return await interaction.response.send_message(embed=embed, ephemeral=True)
-            
-        # Get current autorole if set
-        guild_id = str(interaction.guild.id)
-        current_role = None
-        if guild_id in autorole_settings:
-            role_id = autorole_settings[guild_id]
-            current_role = interaction.guild.get_role(role_id)
-        
-        # Create welcome embed
-        embed = nextcord.Embed(
-            title="🤖 Auto Role Management",
-            description="Configure automatic role assignments for new members who join your server.",
-            color=nextcord.Color.blue()
-        )
-        
-        if current_role:
-            embed.add_field(
-                name="Current Setting",
-                value=f"New members currently receive the {current_role.mention} role automatically.",
-                inline=False
-            )
-        else:
-            embed.add_field(
-                name="Current Setting",
-                value="No automatic role is currently configured.",
-                inline=False
-            )
-            
-        embed.add_field(
-            name="How It Works",
-            value="When enabled, I'll automatically assign the selected role to new members when they join.",
-            inline=False
-        )
-        
-        # Create and send the management view
-        view = AutoRoleManagementView(self.bot, current_role)
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        """Base command for autorole configuration"""
+        pass
     
-    # AUTO ROLE ON JOIN 
+    @autorole.subcommand(
+        name="add",
+        description="Add a role to be automatically assigned to new members"
+    )
+    async def autorole_add(
+        self, 
+        interaction: Interaction, 
+        role: nextcord.Role = SlashOption(
+            description="Role to automatically assign to new members",
+            required=True
+        ),
+        delay: str = SlashOption(
+            description="Optional delay before assigning role (e.g. 10s, 5m, 1h, 2d)",
+            required=False,
+            default=None
+        )
+    ):
+        """Add a role to be automatically assigned to new members"""
+        # Check if user has manage roles permission
+        if not self._check_permissions(interaction):
+            await interaction.response.send_message(
+                embed=EmbedHelper.permission_error_embed("Manage Roles"),
+                ephemeral=True
+            )
+            return
+        
+        # Check if bot has permission to manage this role
+        if role.position >= interaction.guild.me.top_role.position:
+            await interaction.response.send_message(
+                embed=EmbedHelper.error_embed(
+                    "Cannot Configure Role",
+                    f"I cannot assign {role.mention} because it's positioned higher than or equal to my highest role. Please move my role above it in the server settings."
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Parse delay if provided
+        delay_seconds = None
+        if delay:
+            try:
+                delay_seconds = TimeHelper.parse_time(delay)
+                if delay_seconds is None or delay_seconds < 0:
+                    raise ValueError("Invalid time format")
+            except Exception:
+                await interaction.response.send_message(
+                    embed=EmbedHelper.error_embed(
+                        "Invalid Delay Format",
+                        "Please use a valid format like `10s`, `5m`, `1h`, or `2d`."
+                    ),
+                    ephemeral=True
+                )
+                return
+        
+        # Initialize guild config if it doesn't exist
+        guild_id = str(interaction.guild.id)
+        if guild_id not in self.autorole_config:
+            self.autorole_config[guild_id] = {"roles": []}
+        
+        # Check if role is already in autorole config
+        for role_config in self.autorole_config[guild_id]["roles"]:
+            if role_config["id"] == role.id:
+                # Update existing role config
+                role_config["delay"] = delay_seconds
+                self.save_config()
+                
+                delay_text = self._format_delay_text(delay_seconds)
+                await interaction.response.send_message(
+                    embed=EmbedHelper.success_embed(
+                        "Autorole Updated",
+                        f"The role {role.mention} will be automatically assigned to new members{delay_text}."
+                    )
+                )
+                return
+        
+        # Add new role to config
+        self.autorole_config[guild_id]["roles"].append({
+            "id": role.id,
+            "delay": delay_seconds
+        })
+        self.save_config()
+        
+        # Send success message
+        delay_text = self._format_delay_text(delay_seconds)
+        await interaction.response.send_message(
+            embed=EmbedHelper.success_embed(
+                "Autorole Added",
+                f"The role {role.mention} will be automatically assigned to new members{delay_text}."
+            )
+        )
+    #=============================================================================================================================================================
+    @autorole.subcommand(
+        name="remove",
+        description="Remove a role from automatic assignment"
+    )
+    async def autorole_remove(
+        self, 
+        interaction: Interaction, 
+        role: nextcord.Role = SlashOption(
+            description="Role to remove from automatic assignment",
+            required=True
+        )
+    ):
+        """Remove a role from automatic assignment"""
+        # Check if user has manage roles permission
+        if not self._check_permissions(interaction):
+            await interaction.response.send_message(
+                embed=EmbedHelper.permission_error_embed("Manage Roles"),
+                ephemeral=True
+            )
+            return
+        
+        # Check if guild has any autoroles configured
+        guild_id = str(interaction.guild.id)
+        if guild_id not in self.autorole_config or not self.autorole_config[guild_id]["roles"]:
+            await interaction.response.send_message(
+                embed=EmbedHelper.error_embed(
+                    "No Autoroles Configured",
+                    "There are no autoroles configured for this server."
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Check if role is in autorole config
+        role_found = False
+        for i, role_config in enumerate(self.autorole_config[guild_id]["roles"]):
+            if role_config["id"] == role.id:
+                # Remove role from config
+                self.autorole_config[guild_id]["roles"].pop(i)
+                role_found = True
+                break
+        
+        if not role_found:
+            await interaction.response.send_message(
+                embed=EmbedHelper.error_embed(
+                    "Role Not Found",
+                    f"The role {role.mention} is not configured for automatic assignment."
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Save config and send success message
+        self.save_config()
+        await interaction.response.send_message(
+            embed=EmbedHelper.success_embed(
+                "Autorole Removed",
+                f"The role {role.mention} will no longer be automatically assigned to new members."
+            )
+        )
+    #=============================================================================================================================================================
+    @autorole.subcommand(
+        name="list",
+        description="List all roles configured for automatic assignment"
+    )
+    async def autorole_list(self, interaction: Interaction):
+        """List all roles configured for automatic assignment"""
+        # Check if guild has any autoroles configured
+        guild_id = str(interaction.guild.id)
+        if guild_id not in self.autorole_config or not self.autorole_config[guild_id]["roles"]:
+            await interaction.response.send_message(
+                embed=EmbedHelper.info_embed(
+                    "No Autoroles Configured",
+                    "There are no autoroles configured for this server."
+                )
+            )
+            return
+        
+        # Create embed with list of autoroles
+        embed = nextcord.Embed(
+            title="📋 Autorole Configuration",
+            description="The following roles will be automatically assigned to new members:",
+            color=0x3498db  # Using a direct color value instead of EmbedColors.INFO
+        )
+        
+        # Add each role to the embed
+        removed_roles = []
+        for i, role_config in enumerate(self.autorole_config[guild_id]["roles"]):
+            role_id = role_config["id"]
+            role = interaction.guild.get_role(role_id)
+            
+            if role:
+                delay = role_config.get("delay")
+                delay_text = self._format_delay_text(delay)
+                
+                embed.add_field(
+                    name=f"Role #{i+1}",
+                    value=f"{role.mention}{delay_text}",
+                    inline=False
+                )
+            else:
+                # Mark role for removal as it no longer exists
+                removed_roles.append(i)
+        
+        # Remove non-existent roles from config (in reverse order to not mess up indices)
+        for i in sorted(removed_roles, reverse=True):
+            self.autorole_config[guild_id]["roles"].pop(i)
+        
+        if removed_roles:
+            self.save_config()
+            if not self.autorole_config[guild_id]["roles"]:
+                await interaction.response.send_message(
+                    embed=EmbedHelper.info_embed(
+                        "No Valid Autoroles",
+                        "All previously configured autoroles have been removed because they no longer exist in the server."
+                    )
+                )
+                return
+        
+        embed.set_footer(text=f"Total autoroles: {len(self.autorole_config[guild_id]['roles'])}")
+        await interaction.response.send_message(embed=embed)
+    #=============================================================================================================================================================
+    @autorole.subcommand(
+        name="clear",
+        description="Remove all autoroles from this server"
+    )
+    async def autorole_clear(self, interaction: Interaction):
+        """Remove all autoroles from this server"""
+        # Check if user has manage roles permission
+        if not self._check_permissions(interaction):
+            await interaction.response.send_message(
+                embed=EmbedHelper.permission_error_embed("Manage Roles"),
+                ephemeral=True
+            )
+            return
+        
+        # Check if guild has any autoroles configured
+        guild_id = str(interaction.guild.id)
+        if guild_id not in self.autorole_config or not self.autorole_config[guild_id]["roles"]:
+            await interaction.response.send_message(
+                embed=EmbedHelper.error_embed(
+                    "No Autoroles Configured",
+                    "There are no autoroles configured for this server."
+                ),
+                ephemeral=True
+            )
+            return
+        
+        # Ask for confirmation
+        view = AutoroleView()
+        await interaction.response.send_message(
+            embed=EmbedHelper.warning_embed(
+                "Confirmation Required",
+                "Are you sure you want to remove all autoroles from this server? This action cannot be undone."
+            ),
+            view=view
+        )
+        
+        # Wait for the view to timeout or for a button to be pressed
+        await view.wait()
+        
+        # If the user didn't confirm, abort
+        if not view.value:
+            await interaction.edit_original_message(
+                embed=EmbedHelper.info_embed(
+                    "Operation Cancelled",
+                    "Autorole clear operation was cancelled."
+                ),
+                view=None
+            )
+            return
+        
+        # Clear autoroles and save config
+        self.autorole_config[guild_id]["roles"] = []
+        self.save_config()
+        
+        await interaction.edit_original_message(
+            embed=EmbedHelper.success_embed(
+                "Autoroles Cleared",
+                "All autoroles have been removed from this server."
+            ),
+            view=None
+        )
     #=============================================================================================================================================================
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        """Event listener for when a member joins the server"""
+        # Check if guild has any autoroles configured
         guild_id = str(member.guild.id)
-        role_id = autorole_settings.get(guild_id)
-        if role_id:
+        if guild_id not in self.autorole_config or not self.autorole_config[guild_id]["roles"]:
+            return
+        
+        # Assign roles to the new member
+        for role_config in self.autorole_config[guild_id]["roles"]:
+            role_id = role_config["id"]
             role = member.guild.get_role(role_id)
-            if role:
-                try:
-                    await member.add_roles(role, reason="Automatic role assignment for new member")
-                except nextcord.Forbidden:
-                    # Attempt to notify server admins about the permission issue
-                    try:
-                        # Try to find a system channel or default channel to notify about the issue
-                        channel = member.guild.system_channel
-                        if channel and channel.permissions_for(member.guild.me).send_messages:
-                            error_embed = nextcord.Embed(
-                                title="⚠️ Automatic Role Assignment Failed",
-                                description=f"I couldn't assign the configured role to {member.mention} because I don't have sufficient permissions. Please check my role permissions and position in the role hierarchy.",
-                                color=nextcord.Color.red()
-                            )
-                            await channel.send(embed=error_embed)
-                    except:
-                        # If we can't send a notification, silently fail
-                        pass
-    #=============================================================================================================================================================
+            
+            if not role:
+                continue
+                
+            delay = role_config.get("delay")
+            
+            if delay:
+                # Schedule delayed role assignment
+                await asyncio.sleep(delay)
+            
+            try:
+                # Check if member is still in the server
+                if member in member.guild.members:
+                    await member.add_roles(role)
+                    self.bot.logger.info(f"Assigned autorole {role.name} to {member.name} in {member.guild.name}")
+            except nextcord.Forbidden:
+                self.bot.logger.error(f"Missing permissions to assign autorole {role.name} to {member.name} in {member.guild.name}")
+            except Exception as e:
+                self.bot.logger.error(f"Error assigning autorole: {e}")
+#=============================================================================================================================================================

@@ -2,12 +2,13 @@ import nextcord
 import traceback
 import sys
 import datetime
+from .embed_helper import EmbedHelper
 
 class ErrorHandler:
     def __init__(self, bot):
         self.bot = bot
         
-    async def handle_command_error(self, interaction: nextcord.Interaction, error: Exception, command_name: str = None):
+    async def handle_command_error(self, interaction: nextcord.Interaction, error: Exception, command_name: str = None, is_followup: bool = False):
         """Handle errors from slash commands and send formatted error messages"""
         error_type = type(error).__name__
         error_trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
@@ -28,40 +29,45 @@ class ErrorHandler:
         print(f"Traceback:\n{error_trace}")
         print(f"{'='*50}\n")
         
-        # Create user-friendly error message
-        embed = nextcord.Embed(
-            title="Command Error",  # Simplified title
-            color=0xFF0000,
-            timestamp=datetime.datetime.now()
-        )
-        
-        # Add user-friendly error message based on error type
+        # Create user-friendly error message based on error type
         if isinstance(error, nextcord.errors.Forbidden):
-            embed.description = "I don't have permission to do that."
+            embed = EmbedHelper.error_embed(
+                "Action Failed",
+                "I don't have permission to do that."
+            )
         elif isinstance(error, nextcord.errors.NotFound):
-            embed.description = "I couldn't find what you're looking for."
+            embed = EmbedHelper.error_embed(
+                "Not Found",
+                "I couldn't find what you're looking for."
+            )
         elif isinstance(error, nextcord.errors.HTTPException):
             if "40032" in str(error):  # User not in voice channel
-                embed.description = "The user needs to be in a voice channel for this command."
+                embed = EmbedHelper.error_embed(
+                    "Voice Channel Required",
+                    "The user needs to be in a voice channel for this command."
+                )
             else:
-                embed.description = "There was a problem with Discord. Please try again later."
+                embed = EmbedHelper.error_embed(
+                    "Discord Error",
+                    "There was a problem with Discord. Please try again later."
+                )
         elif "is not connected to voice" in str(error):
-            embed.description = "The user needs to be in a voice channel for this command."
+            embed = EmbedHelper.error_embed(
+                "Voice Channel Required",
+                "The user needs to be in a voice channel for this command."
+            )
         else:
-            # Simplify the error message
-            simple_error = str(error).split(":")[-1].strip() if ":" in str(error) else str(error)
-            embed.description = f"Something went wrong. Please try again later."
-        
-        # Remove technical error details for user-facing messages
-        # embed.add_field(name="Error Type", value=f"`{error_type}`", inline=True)
-        # embed.add_field(name="Command", value=f"`/{command_name}`", inline=True)
+            embed = EmbedHelper.error_embed(
+                "Something Went Wrong",
+                "An unexpected error occurred. Please try again later."
+            )
         
         # Add footer with error ID
         embed.set_footer(text=f"Error ID: {interaction.id}")
         
         # Try to send to the user
         try:
-            if not interaction.response.is_done():
+            if not interaction.response.is_done() and not is_followup:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
             else:
                 await interaction.followup.send(embed=embed, ephemeral=True)
@@ -76,9 +82,16 @@ class ErrorHandler:
         try:
             error_channel = nextcord.utils.get(interaction.guild.channels, name="error-logs")
             if error_channel:
-                # Add more detailed information for the error logs
-                embed.add_field(name="User", value=f"{interaction.user.mention} ({interaction.user.id})", inline=True)
-                embed.add_field(name="Channel", value=f"{interaction.channel.mention} ({interaction.channel.id})", inline=True)
+                # Create a more detailed embed for the error logs
+                log_embed = nextcord.Embed(
+                    title=f"Command Error: /{command_name}",
+                    description=f"**Error Type:** `{error_type}`\n**Error Message:** `{str(error)}`",
+                    color=0xFF0000,
+                    timestamp=datetime.datetime.now()
+                )
+                
+                log_embed.add_field(name="User", value=f"{interaction.user.mention} ({interaction.user.id})", inline=True)
+                log_embed.add_field(name="Channel", value=f"{interaction.channel.mention} ({interaction.channel.id})", inline=True)
                 
                 # Add truncated traceback
                 trace_lines = error_trace.split('\n')
@@ -89,9 +102,10 @@ class ErrorHandler:
                 if len(trace_text) > 1024:
                     trace_text = trace_text[:1021] + "..."
                     
-                embed.add_field(name="Traceback", value=f"```py\n{trace_text}\n```", inline=False)
+                log_embed.add_field(name="Traceback", value=f"```py\n{trace_text}\n```", inline=False)
+                log_embed.set_footer(text=f"Error ID: {interaction.id}")
                 
-                await error_channel.send(embed=embed)
+                await error_channel.send(embed=log_embed)
         except:
             # If we can't send to the error logs channel, just continue
             pass

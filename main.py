@@ -6,28 +6,31 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import the error handler
+# Import utilities
 from utils.error_handler import ErrorHandler
+from utils.embed_helper import EmbedHelper, EmbedColors
+from utils.time_helper import TimeHelper
+
+# Bot version
+BOT_VERSION = 'v1.0.1'
 
 #importing moderation cogs
 #=============================================================================================================================================================
-from cogs.moderation.ban import Ban
-from cogs.moderation.unban import Unban  
-from cogs.moderation.kick import Kick
-from cogs.moderation.purge import Purge
-from cogs.moderation.timeout import Timeout
-from cogs.moderation.lock import LockUnlock
-from cogs.moderation.slowmode import Slowmode
-from cogs.moderation.mute import MuteSystem
-from cogs.moderation.deafen import DeafenSystem
+from cogs.moderation.ban import BanCommands
+from cogs.moderation.kick import KickCommands
+from cogs.moderation.purge import PurgeCommands
+from cogs.moderation.lock import LockCommands
+from cogs.moderation.slowmode import SlowmodeCommands
+from cogs.moderation.mute import MuteCommands
+from cogs.moderation.deafen import DeafenCommands
 #=============================================================================================================================================================
 
 
 #importing admin cogs
 #=============================================================================================================================================================
-from cogs.admin.role import Role
-from cogs.admin.logs import Logs
-from cogs.admin.autorole import AutoRole
+from cogs.admin.role import RoleCommands
+from cogs.admin.logs import LogsCommands
+from cogs.admin.autorole import Autorole
 #=============================================================================================================================================================
 
 
@@ -50,27 +53,29 @@ intents.members = True
 # BOT INSTANCE
 bot = commands.Bot(command_prefix="s!", intents=intents, help_command=None)
 
-# ERROR HANDLER
+# Make utilities available to all cogs
 bot.error_handler = ErrorHandler(bot)
 bot.error_handler.register_error_handlers()
+bot.embed_helper = EmbedHelper
+bot.embed_colors = EmbedColors
+bot.time_helper = TimeHelper
+bot.version = BOT_VERSION
 
 # Load Moderation cogs
 #=============================================================================================================================================================
-bot.add_cog(Ban(bot))
-bot.add_cog(Unban(bot))  
-bot.add_cog(Kick(bot))
-bot.add_cog(Purge(bot))
-bot.add_cog(Timeout(bot))
-bot.add_cog(LockUnlock(bot))
-bot.add_cog(Slowmode(bot))
-bot.add_cog(MuteSystem(bot))
-bot.add_cog(DeafenSystem(bot))
+bot.add_cog(BanCommands(bot))
+bot.add_cog(KickCommands(bot))
+bot.add_cog(PurgeCommands(bot))
+bot.add_cog(LockCommands(bot))
+bot.add_cog(SlowmodeCommands(bot))
+bot.add_cog(MuteCommands(bot))
+bot.add_cog(DeafenCommands(bot))
 #=============================================================================================================================================================
 # Load Admin cogs
 #=============================================================================================================================================================
-bot.add_cog(Role(bot))
-bot.add_cog(Logs(bot))
-bot.add_cog(AutoRole(bot))
+bot.add_cog(RoleCommands(bot))
+bot.add_cog(LogsCommands(bot))
+bot.add_cog(Autorole(bot))
 #=============================================================================================================================================================
 # Load utility cogs
 #=============================================================================================================================================================
@@ -96,6 +101,10 @@ load_cogs(bot)
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
+    print(f'Bot Version: {BOT_VERSION}')
+    print(f'Nextcord Version: {nextcord.__version__}')
+    print(f'Connected to {len(bot.guilds)} servers')
+    print('------')
 
 # Run the bot
 bot.run(BOT_TOKEN)
