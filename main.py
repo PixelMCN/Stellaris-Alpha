@@ -38,7 +38,7 @@ from cogs.admin.autorole import Autorole
 #=============================================================================================================================================================
 from cogs.utility.help import HelpCommand
 from cogs.utility.activity import ActivityManager
-from cogs.utility.debugpanel import Debug
+from cogs.utility.status import Status
 from cogs.utility.avatar import Avatar
 from cogs.utility.serverinfo import ServerInfo
 from cogs.utility.userinfo import UserInfo
@@ -83,7 +83,7 @@ bot.add_cog(Autorole(bot))
 #=============================================================================================================================================================
 bot.add_cog(HelpCommand(bot))
 bot.add_cog(ActivityManager(bot))
-bot.add_cog(Debug(bot))
+bot.add_cog(Status(bot))
 bot.add_cog(Avatar(bot))
 bot.add_cog(ServerInfo(bot))
 bot.add_cog(UserInfo(bot))
