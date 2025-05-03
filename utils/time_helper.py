@@ -7,6 +7,14 @@ class TimeHelper:
     """Helper class for time-related operations"""
     
     @staticmethod
+    def now() -> datetime:
+        """
+        Returns the current datetime object
+        This method was added to fix the error in role_add and role_remove
+        """
+        return datetime.now()
+    
+    @staticmethod
     def parse_time(time_str: str) -> Optional[int]:
         """
         Parse a time string like "10s", "5m", "1h", "2d" into seconds
