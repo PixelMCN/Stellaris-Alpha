@@ -46,10 +46,6 @@ class ActivityManager(commands.Cog):
         user_count = sum(guild.member_count for guild in self.bot.guilds)
         
         return [
-            # Playing activities
-            {"type": nextcord.ActivityType.playing, "name": f"in {server_count} servers"},
-            {"type": nextcord.ActivityType.playing, "name": f"with {user_count} users"},
-            
             # Watching activities
             {"type": nextcord.ActivityType.watching, "name": f"over {server_count} servers"},
             {"type": nextcord.ActivityType.watching, "name": f"{user_count} users"},
