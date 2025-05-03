@@ -183,11 +183,11 @@ class Debug(commands.Cog):
         disk_status = "🟢" if sys["disk_percent"] > 20 else "🟠" if sys["disk_percent"] > 10 else "🔴"
         
         embed.add_field(
-            name='💻 System Resources',
+            name='System Resources',
             value=f'```\n'
-                  f'{cpu_status} CPU Usage   : {sys["cpu_usage"]}%\n'
-                  f'{ram_status} Memory      : {sys["memory_used"]:,}MB / {sys["memory_total"]:,}MB ({sys["memory_percent"]}%)\n'
-                  f'{disk_status} Disk Space  : {sys["disk_free"]:,}GB Free ({sys["disk_percent"]}% free)\n'
+                  f'CPU Usage   : {sys["cpu_usage"]}%\n'
+                  f'Memory      : {sys["memory_used"]:,}MB / {sys["memory_total"]:,}MB ({sys["memory_percent"]}%)\n'
+                  f'Disk Space  : {sys["disk_free"]:,}GB Free ({sys["disk_percent"]}% free)\n'
                   f'Platform    : {sys["platform"]}\n'
                   f'CPU Cores   : {sys["cpu_cores"]}\n'
                   f'Architecture: {sys["arch"]}\n'
@@ -198,7 +198,7 @@ class Debug(commands.Cog):
         # Bot Statistics Field
         bot = metrics["bot"]
         embed.add_field(
-            name='🤖 Bot Statistics',
+            name='Bot Statistics',
             value=f'```\n'
                   f'Bot Version : {bot["version"]}\n'
                   f'Nextcord    : {bot["nextcord_version"]}\n'
@@ -216,23 +216,12 @@ class Debug(commands.Cog):
         # Process Memory Usage Field
         proc = metrics["process"]
         embed.add_field(
-            name='🧮 Memory Usage',
+            name='Memory Usage',
             value=f'```\n'
                   f'RSS Memory  : {proc["rss"]:,}MB (Physical memory in use)\n'
                   f'Virtual Mem : {proc["vms"]:,}MB (Virtual memory allocated)\n'
                   f'Threads     : {proc["threads"]}\n'
                   f'```',
-            inline=False
-        )
-        
-        # Add some quick tips
-        embed.add_field(
-            name='💡 Quick Tips',
-            value=(
-                "• High CPU usage might indicate intensive tasks or loops\n"
-                "• High memory usage could suggest memory leaks\n"
-                "• View the full logs for more detailed diagnostics"
-            ),
             inline=False
         )
         
