@@ -1,13 +1,11 @@
 import nextcord
 from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
-import os
 import logging
 from datetime import datetime
-import asyncio
 
 class HelpCommand(commands.Cog):
-    """Enhanced command for displaying all available bot commands"""
+    """Clean and professional help command for displaying available bot commands"""
     
     def __init__(self, bot):
         self.bot = bot
@@ -22,7 +20,7 @@ class HelpCommand(commands.Cog):
         
     @nextcord.slash_command(
         name="help", 
-        description="Display all available commands with detailed information"
+        description="Display available commands with detailed information"
     )
     async def help(
         self, 
@@ -31,10 +29,14 @@ class HelpCommand(commands.Cog):
             description="Command category to display",
             required=False,
             choices={"All": "all", "Admin": "admin", "Moderation": "moderation", "Utility": "utility"}
+        ),
+        command: str = SlashOption(
+            description="Specific command to get help for",
+            required=False
         )
     ):
         """
-        Display all available commands, optionally filtered by category
+        Display all available commands or get help for a specific command
         
         Parameters
         ----------
@@ -42,187 +44,155 @@ class HelpCommand(commands.Cog):
             The interaction object containing the command context
         category : str, optional
             The command category to display. Defaults to "all"
+        command : str, optional
+            Specific command to get help for
         """
         try:
-            # Defer response to allow time for processing
             await interaction.response.defer(ephemeral=False)
+            
+            # If a specific command was requested
+            if command:
+                command_info = self._find_command_info(command)
+                if not command_info:
+                    await interaction.followup.send(
+                        f"Command `/{command}` not found. Use `/help` to see all available commands.",
+                        ephemeral=True
+                    )
+                    return
+                
+                # Send command-specific help
+                embed = self._create_command_info_embed(command, command_info)
+                await interaction.followup.send(embed=embed)
+                self.logger.info(f"Command info requested by {interaction.user} for /{command}")
+                return
             
             # Default to showing all categories if none specified
             if not category:
                 category = "all"
                 
-            # Create the main embed with pagination if necessary
-            embed_pages = self._create_help_embeds(category, interaction.user)
+            # Create the help embed
+            embed = self._create_help_embed(category, interaction.user)
             
-            # If only one page, send it directly
-            if len(embed_pages) == 1:
-                await interaction.followup.send(embed=embed_pages[0])
-                self.logger.info(f"Help command used by {interaction.user} (ID: {interaction.user.id}) - category: {category}")
-                return
+            # Send the embed with pagination if needed
+            if category == "all":
+                # Create view with dropdown menu for category selection
+                view = self._create_category_select_view(interaction.user)
+                await interaction.followup.send(embed=embed, view=view)
+            else:
+                await interaction.followup.send(embed=embed)
                 
-            # Otherwise, set up pagination
-            current_page = 0
-            message = await interaction.followup.send(
-                embed=embed_pages[current_page],
-                view=self._create_pagination_view(embed_pages, current_page)
-            )
+            self.logger.info(f"Help command used by {interaction.user} (ID: {interaction.user.id}) - category: {category}")
             
-            self.logger.info(f"Help command with pagination used by {interaction.user} (ID: {interaction.user.id}) - category: {category}")
-            
-        except asyncio.TimeoutError:
-            self.logger.warning(f"Help command timed out for {interaction.user}")
-            await interaction.followup.send("The help command timed out. Please try again.")
         except Exception as e:
             self.logger.error(f"Error in help command: {str(e)}", exc_info=True)
             await interaction.followup.send(
-                "Sorry, I couldn't retrieve the command information. Please try again later or contact a server administrator.",
+                "Sorry, I couldn't retrieve the command information. Please try again later.",
                 ephemeral=True
             )
     
-    def _create_pagination_view(self, pages, current_page):
-        """Create navigation buttons for paginated embeds"""
+    def _create_category_select_view(self, user):
+        """Create dropdown menu for category selection"""
         view = nextcord.ui.View(timeout=180)
         
-        # Add the pagination buttons
-        prev_button = nextcord.ui.Button(style=nextcord.ButtonStyle.secondary, emoji="⬅️", disabled=(current_page == 0))
-        next_button = nextcord.ui.Button(style=nextcord.ButtonStyle.secondary, emoji="➡️", disabled=(current_page == len(pages) - 1))
+        # Add dropdown for categories
+        select = nextcord.ui.Select(
+            placeholder="Select a category",
+            options=[
+                nextcord.SelectOption(label="All Commands", value="all", description="View all available commands"),
+                nextcord.SelectOption(label="Admin Commands", value="admin", description="Server management commands"),
+                nextcord.SelectOption(label="Moderation Commands", value="moderation", description="User moderation commands"),
+                nextcord.SelectOption(label="Utility Commands", value="utility", description="Information and utility commands")
+            ]
+        )
         
-        async def prev_callback(interaction: Interaction):
-            nonlocal current_page
-            current_page = max(0, current_page - 1)
-            await interaction.response.edit_message(
-                embed=pages[current_page],
-                view=self._create_pagination_view(pages, current_page)
-            )
-            
-        async def next_callback(interaction: Interaction):
-            nonlocal current_page
-            current_page = min(len(pages) - 1, current_page + 1)
-            await interaction.response.edit_message(
-                embed=pages[current_page],
-                view=self._create_pagination_view(pages, current_page)
-            )
-            
-        prev_button.callback = prev_callback
-        next_button.callback = next_callback
+        async def select_callback(interaction: Interaction):
+            category = select.values[0]
+            embed = self._create_help_embed(category, user)
+            await interaction.response.edit_message(embed=embed, view=self._create_category_select_view(user))
         
-        view.add_item(prev_button)
-        view.add_item(next_button)
+        select.callback = select_callback
+        view.add_item(select)
         
         return view
     
-    def _create_help_embeds(self, category, user):
-        """Create rich embeds with command information, potentially paginated"""
-        embeds = []
-        
-        # Main embed with general information
+    def _create_help_embed(self, category, user):
+        """Create a rich embed with command information"""
         if category == "all":
-            title = "📚 Bot Command Guide"
-            description = "Here's a list of all available commands organized by category.\n\nUse `/help [category]` to see more detailed information about a specific category."
+            title = "Bot Command Guide"
+            description = "Here's a list of all available commands organized by category.\n\nUse the dropdown menu below to view specific categories or use `/help [category]` to see more details."
         else:
-            title = f"📚 {self.categories[category]}"
+            title = f"{self.categories[category]}"
             description = f"Here's a list of all {category.lower()} commands and their usage"
         
-        main_embed = nextcord.Embed(
+        embed = nextcord.Embed(
             title=title,
             description=description,
             color=self.embed_color
         )
         
         # Set author with bot information
-        main_embed.set_author(
-            name=f"{self.bot.user.name} Help System",
-            icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
-        )
-        
-        # Add category commands
-        if category == "all":
-            # Create a summary page with command counts for each category
-            admin_count = len(self._get_admin_commands(as_list=True))
-            mod_count = len(self._get_moderation_commands(as_list=True))
-            utility_count = len(self._get_utility_commands(as_list=True))
-            
-            main_embed.add_field(
-                name="🛡️ Admin Commands",
-                value=f"{admin_count} commands - Server management and configuration",
-                inline=False
-            )
-            main_embed.add_field(
-                name="🔨 Moderation Commands",
-                value=f"{mod_count} commands - User moderation and channel management",
-                inline=False
-            )
-            main_embed.add_field(
-                name="🔧 Utility Commands",
-                value=f"{utility_count} commands - Information and utility features",
-                inline=False
-            )
-            
-            # Add tips field
-            main_embed.add_field(
-                name="💡 Tips",
-                value="• Commands with subcommands will show additional options when selected\n"
-                      "• Most commands include detailed help information and examples\n"
-                      "• Required parameters are marked with `*`",
-                inline=False
-            )
-            
-            embeds.append(main_embed)
-            
-            # Create individual category pages
-            for cat in ["admin", "moderation", "utility"]:
-                embeds.append(self._create_category_embed(cat, user))
-                
-        else:
-            # Just add the requested category
-            self._add_category_commands(main_embed, category)
-            main_embed.set_footer(text=f"Requested by {user.name} • Page 1/1")
-            main_embed.timestamp = datetime.now()
-            embeds.append(main_embed)
-        
-        # Update footer for pagination
-        for i, embed in enumerate(embeds):
-            embed.set_footer(text=f"Requested by {user.name} • Page {i+1}/{len(embeds)}")
-            embed.timestamp = datetime.now()
-            
-        return embeds
-    
-    def _create_category_embed(self, category, user):
-        """Create an embed for a specific command category"""
-        embed = nextcord.Embed(
-            title=f"📚 {self.categories[category]}",
-            description=f"Detailed list of {category.lower()} commands",
-            color=self.embed_color
-        )
-        
         embed.set_author(
             name=f"{self.bot.user.name} Help System",
             icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
         )
         
-        self._add_category_commands(embed, category)
+        # Add commands based on category
+        if category == "all":
+            # Summary of all command categories
+            admin_commands = self._get_admin_commands(as_list=True)
+            mod_commands = self._get_moderation_commands(as_list=True)
+            utility_commands = self._get_utility_commands(as_list=True)
+            
+            embed.add_field(
+                name="Admin Commands",
+                value=f"{len(admin_commands)} commands - Server management and configuration",
+                inline=False
+            )
+            embed.add_field(
+                name="Moderation Commands",
+                value=f"{len(mod_commands)} commands - User moderation and channel management",
+                inline=False
+            )
+            embed.add_field(
+                name="Utility Commands",
+                value=f"{len(utility_commands)} commands - Information and utility features",
+                inline=False
+            )
+            
+            # Add tips field
+            embed.add_field(
+                name="Tips",
+                value="• Commands with subcommands will show additional options when selected\n"
+                      "• Use `/help command:[command_name]` to see detailed information about a specific command\n"
+                      "• Required parameters are marked with `*`",
+                inline=False
+            )
+        else:
+            # Add the requested category commands
+            self._add_category_commands(embed, category)
+        
+        # Set footer and timestamp
+        embed.set_footer(text=f"Requested by {user.name}")
+        embed.timestamp = datetime.now()
         
         return embed
-        
+    
     def _add_category_commands(self, embed, category):
         """Add appropriate command list to an embed based on category"""
         if category == "admin":
             commands = self._get_admin_commands()
-            emoji = "🛡️"
             description = "Commands for server configuration and management"
         elif category == "moderation":
             commands = self._get_moderation_commands()
-            emoji = "🔨"
             description = "Commands for moderating users and managing channels"
         elif category == "utility":
             commands = self._get_utility_commands()
-            emoji = "🔧"
             description = "Utility commands for information and server assistance"
         else:
             return
             
         embed.add_field(
-            name=f"{emoji} {self.categories[category]}",
+            name=f"{self.categories[category]}",
             value=description,
             inline=False
         )
@@ -270,7 +240,7 @@ class HelpCommand(commands.Cog):
             "• `/role` - Manage server roles",
             "• `/role add` - Add a role to users with optional reason",
             "• `/role remove` - Remove a role from users with optional reason",
-            "• `/role info` - Get detailed information about a role (permissions, users, etc.)",
+            "• `/role info` - Get detailed information about a role",
             "• `/logs` - Set up logging channels for moderation actions",
             "• `/logs set` - Configure which channel receives specific log events",
             "• `/logs status` - View current logging configuration",
@@ -291,14 +261,14 @@ class HelpCommand(commands.Cog):
             "• `/banlist` - View all banned users",
             "• `/kick` - Kick a user from the server with optional reason",
             "• `/softban` - Ban and immediately unban a user to delete their messages",
-            "• `/mute` - Mute a user in text channels with optional duration and reason",
+            "• `/mute` - Mute a user in text channels with optional duration",
             "• `/unmute` - Unmute a previously muted user",
             "• `/deafen` - Deafen a user in voice channels",
             "• `/undeafen` - Undeafen a user in voice channels",
             "• `/lock` - Lock a channel to prevent messages from specific roles",
             "• `/unlock` - Unlock a previously locked channel",
             "• `/slowmode` - Set slowmode cooldown in a channel",
-            "• `/purge` - Delete multiple messages with filters (user, contains, etc.)",
+            "• `/purge` - Delete multiple messages with filters",
             "• `/clear` - Clear all messages in a channel with confirmation"
         ]
         
@@ -307,8 +277,8 @@ class HelpCommand(commands.Cog):
     def _get_utility_commands(self, as_list=False):
         """Get formatted list of utility commands"""
         commands = [
-            "• `/serverinfo` - Get detailed information about the server (roles, channels, etc.)",
-            "• `/userinfo` - Get information about a user (roles, join date, etc.)",
+            "• `/serverinfo` - Get detailed information about the server",
+            "• `/userinfo` - Get information about a user",
             "• `/avatar` - View a user's avatar in full size with download options",
             "• `/activity` - Set a custom status for the bot (admin only)",
             "• `/ping` - Check the bot's response time and API latency",
@@ -318,63 +288,14 @@ class HelpCommand(commands.Cog):
         
         return commands if as_list else "\n".join(commands)
     
-    @nextcord.slash_command(
-        name="command",
-        description="Get detailed information about a specific command"
-    )
-    async def command_info(
-        self,
-        interaction: Interaction,
-        command_name: str = SlashOption(
-            description="The name of the command to look up",
-            required=True
-        )
-    ):
-        """
-        Get detailed help for a specific command
-        
-        Parameters
-        ----------
-        interaction : Interaction
-            The interaction object containing the command context
-        command_name : str
-            The name of the command to look up
-        """
-        try:
-            await interaction.response.defer(ephemeral=False)
-            
-            # Remove leading slash if provided
-            if command_name.startswith('/'):
-                command_name = command_name[1:]
-                
-            # Find the command
-            command_info = self._find_command_info(command_name)
-            
-            if not command_info:
-                await interaction.followup.send(
-                    f"Command `/{command_name}` not found. Use `/help` to see all available commands.",
-                    ephemeral=True
-                )
-                return
-                
-            # Create and send the command info embed
-            embed = self._create_command_info_embed(command_name, command_info)
-            await interaction.followup.send(embed=embed)
-            
-            self.logger.info(f"Command info requested by {interaction.user} for /{command_name}")
-            
-        except Exception as e:
-            self.logger.error(f"Error in command_info: {str(e)}", exc_info=True)
-            await interaction.followup.send(
-                "Sorry, I couldn't retrieve information for that command. Please try again later.",
-                ephemeral=True
-            )
-    
     def _find_command_info(self, command_name):
         """Find detailed information about a specific command"""
-        # This is a simplified example - in a real bot, you would
-        # dynamically generate this from your command definitions
-        
+        # Remove leading slash if provided
+        if command_name.startswith('/'):
+            command_name = command_name[1:]
+            
+        # This would be dynamically generated in a real bot
+        # Just showing a simplified example here
         command_details = {
             "ban": {
                 "category": "moderation",
@@ -394,14 +315,16 @@ class HelpCommand(commands.Cog):
             "help": {
                 "category": "utility",
                 "description": "Display all available commands",
-                "usage": "/help <category>",
+                "usage": "/help <category> <command>",
                 "examples": [
                     "/help",
-                    "/help moderation"
+                    "/help category:moderation",
+                    "/help command:ban"
                 ],
                 "permissions": [],
                 "parameters": [
-                    {"name": "category", "description": "Command category to display", "required": False}
+                    {"name": "category", "description": "Command category to display", "required": False},
+                    {"name": "command", "description": "Specific command to get help for", "required": False}
                 ]
             },
             # Add more commands as needed
@@ -419,7 +342,7 @@ class HelpCommand(commands.Cog):
         
         # Add usage information
         embed.add_field(
-            name="📝 Usage",
+            name="Usage",
             value=f"`{info['usage']}`",
             inline=False
         )
@@ -427,7 +350,7 @@ class HelpCommand(commands.Cog):
         # Add examples
         if info["examples"]:
             embed.add_field(
-                name="💡 Examples",
+                name="Examples",
                 value="\n".join([f"`{example}`" for example in info["examples"]]),
                 inline=False
             )
@@ -436,11 +359,11 @@ class HelpCommand(commands.Cog):
         if info["parameters"]:
             param_text = ""
             for param in info["parameters"]:
-                required = "✅ Required" if param["required"] else "❔ Optional"
+                required = "Required" if param["required"] else "Optional"
                 param_text += f"• **{param['name']}** - {param['description']} ({required})\n"
                 
             embed.add_field(
-                name="🔧 Parameters",
+                name="Parameters",
                 value=param_text,
                 inline=False
             )
@@ -449,25 +372,25 @@ class HelpCommand(commands.Cog):
         if info["permissions"]:
             perm_text = "\n".join([f"• {perm}" for perm in info["permissions"]])
             embed.add_field(
-                name="🔒 Required Permissions",
+                name="Required Permissions",
                 value=perm_text,
                 inline=False
             )
         else:
             embed.add_field(
-                name="🔒 Required Permissions",
+                name="Required Permissions",
                 value="None - Anyone can use this command",
                 inline=False
             )
             
         # Add category for reference
         embed.add_field(
-            name="📂 Category",
+            name="Category",
             value=info["category"].title(),
             inline=True
         )
         
-        embed.set_footer(text=f"Type /help for a list of all commands")
+        embed.set_footer(text="Type /help for a list of all commands")
         embed.timestamp = datetime.now()
         
         return embed
