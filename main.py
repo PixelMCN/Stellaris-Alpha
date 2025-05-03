@@ -43,6 +43,9 @@ from cogs.utility.avatar import Avatar
 from cogs.utility.serverinfo import ServerInfo
 from cogs.utility.userinfo import UserInfo
 #=============================================================================================================================================================
+# importing activity cogs
+from utils.activity import ActivityManager
+#=============================================================================================================================================================
 
 BOT_TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -82,11 +85,13 @@ bot.add_cog(Autorole(bot))
 # Load utility cogs
 #=============================================================================================================================================================
 bot.add_cog(HelpCommand(bot))
-bot.add_cog(ActivityManager(bot))
 bot.add_cog(Status(bot))
 bot.add_cog(Avatar(bot))
 bot.add_cog(ServerInfo(bot))
 bot.add_cog(UserInfo(bot))
+#=============================================================================================================================================================
+# EVENTS & ACTIVITIES
+bot.add_cog(ActivityManager(bot))
 #=============================================================================================================================================================
 # WILL IMPLEMENT THIS LATER LOL
 """
