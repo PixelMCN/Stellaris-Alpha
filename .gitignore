@@ -179,3 +179,4 @@ cython_debug/
 /structure.md
 cogs/moderation/automod.py
 data/automod.json
+data/autorole.json
