@@ -19,7 +19,6 @@
 ## Moderation
 | Command | Description |
 |---------|-------------|
-| **AutoMod** | Automated message moderation with toggleable features |
 | **Kick** | Remove users from your server |
 | **Softban** | Kick users and delete their messages |
 | **Ban** | Permanently ban users from your server |
