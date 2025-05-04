@@ -3,7 +3,7 @@ from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
 import logging
 from datetime import datetime
-
+#=============================================================================================================================================================
 class HelpCommand(commands.Cog):
     """Clean and professional help command for displaying available bot commands"""
     
@@ -17,7 +17,7 @@ class HelpCommand(commands.Cog):
             "moderation": "Moderation Commands", 
             "utility": "Utility Commands"
         }
-        
+#=============================================================================================================================================================        
     @nextcord.slash_command(
         name="help", 
         description="Display available commands with detailed information"
@@ -394,3 +394,4 @@ class HelpCommand(commands.Cog):
         embed.timestamp = datetime.now()
         
         return embed
+#=============================================================================================================================================================

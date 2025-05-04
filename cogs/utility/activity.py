@@ -6,7 +6,7 @@ import asyncio
 from typing import Dict, List, Union, Optional, Any
 
 logger = logging.getLogger(__name__)
-
+#================================================================================================================================================================
 class ActivityManager(commands.Cog):
     """
     A cog to manage dynamic activity status for Discord bots.
@@ -62,7 +62,7 @@ class ActivityManager(commands.Cog):
             # Custom status
             {"type": nextcord.ActivityType.custom, "name": f"Serving {server_count} servers!"}
         ]
-    
+    #=============================================================================================================================================================
     @tasks.loop(seconds=5)
     async def change_activity(self) -> None:
         """
@@ -108,7 +108,7 @@ class ActivityManager(commands.Cog):
         logger.info("Waiting for bot to be ready before starting activity rotation...")
         await self.bot.wait_until_ready()
         logger.info("Bot is ready, starting activity rotation")
-    
+    #=============================================================================================================================================================
     @commands.command(name="forcestatus")
     @commands.is_owner()  # Only the bot owner can use this command
     async def force_status_update(self, ctx: commands.Context) -> None:
@@ -121,8 +121,4 @@ class ActivityManager(commands.Cog):
         except Exception as e:
             logger.error(f"Error forcing status update: {e}")
             await ctx.send(f"Error: {e}")
-
-
-def setup(bot: commands.Bot) -> None:
-    """Add the ActivityManager cog to the bot."""
-    bot.add_cog(ActivityManager(bot))
+#=================================================================================================================================================================

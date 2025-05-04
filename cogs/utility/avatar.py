@@ -10,7 +10,6 @@ class Avatar(commands.Cog):
 
     # AVATAR COMMANDS
     #=============================================================================================================================================================
-    # Slash command implementation
     @nextcord.slash_command(name="avatar", description="Get the avatar of a user")
     async def avatar(self, interaction: Interaction, member: nextcord.Member = nextcord.SlashOption(required=False)):
         """
